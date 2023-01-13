@@ -141,7 +141,7 @@ class SynapseManagementService:
         pass the datasets parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print('hello')
+        print(root_path)
         if(os.path.isdir(f'{root_path}/dataset/') is True):
             if datasets is None:
                 datasets = os.listdir(f'{root_path}/dataset/')
@@ -159,7 +159,7 @@ class SynapseManagementService:
         pass the dataflows parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print('hello')
+        print(root_path)
         if(os.path.isdir(f'{root_path}/dataflow/') is True):
             if(dataflows is None):
                 dataflows = [item for item in os.listdir(f'{root_path}/dataflow/')]
@@ -176,7 +176,7 @@ class SynapseManagementService:
         pass the notebooks parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print('hello')
+        print(root_path)
         if(os.path.isdir(f'{root_path}/notebook/') is True):
             if(notebooks is None):
                 notebooks = os.listdir(f'{root_path}/notebook/')
@@ -193,7 +193,7 @@ class SynapseManagementService:
         pass the pipelines parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print('hello')
+        print(root_path)
         if(os.path.isdir(f'{root_path}/pipeline/') is True):
             if(pipelines is None):
                 pipelines = [item for item in os.listdir(f'{root_path}/pipeline/')]
@@ -210,7 +210,7 @@ class SynapseManagementService:
         pass the linked services parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print('hello')
+        print(root_path)
         if(os.path.isdir(f'{root_path}/linkedService/') is True):
             if(linked_services is None):
                 linked_services = os.listdir(f'{root_path}/linkedService/')
