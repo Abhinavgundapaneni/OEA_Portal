@@ -141,10 +141,10 @@ class SynapseManagementService:
         pass the datasets parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print(root_path)
-        if(os.path.isdir(f'{root_path}/dataset/') is True):
+
+        if(os.path.isdir(f'{root_path}/') is True):
             if datasets is None:
-                datasets = os.listdir(f'{root_path}/dataset/')
+                datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
                     self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/dataset/{dataset}')
@@ -159,13 +159,13 @@ class SynapseManagementService:
         pass the dataflows parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print(root_path)
-        if(os.path.isdir(f'{root_path}/dataflow/') is True):
+
+        if(os.path.isdir(f'{root_path}/') is True):
             if(dataflows is None):
-                dataflows = [item for item in os.listdir(f'{root_path}/dataflow/')]
+                dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    self.create_or_update_dataflow(synapse_workspace_name, f'{root_path}/dataflow/{dataflow}', dataflow.split('.')[0])
+                    self.create_or_update_dataflow(synapse_workspace_name, f'{root_path}/{dataflow}', dataflow.split('.')[0])
                 except Exception as e:
                     pass
 
@@ -176,13 +176,13 @@ class SynapseManagementService:
         pass the notebooks parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print(root_path)
-        if(os.path.isdir(f'{root_path}/notebook/') is True):
+
+        if(os.path.isdir(f'{root_path}/') is True):
             if(notebooks is None):
-                notebooks = os.listdir(f'{root_path}/notebook/')
+                notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    self.create_notebook(f"{root_path}/notebook/{notebook}", synapse_workspace_name)
+                    self.create_notebook(f"{root_path}/{notebook}", synapse_workspace_name)
                 except Exception as e:
                     pass
 
@@ -193,13 +193,13 @@ class SynapseManagementService:
         pass the pipelines parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print(root_path)
-        if(os.path.isdir(f'{root_path}/pipeline/') is True):
+
+        if(os.path.isdir(f'{root_path}/') is True):
             if(pipelines is None):
-                pipelines = [item for item in os.listdir(f'{root_path}/pipeline/')]
+                pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    self.create_or_update_pipeline(synapse_workspace_name, f'{root_path}/pipeline/{pipeline}', pipeline.split('.')[0])
+                    self.create_or_update_pipeline(synapse_workspace_name, f'{root_path}/{pipeline}', pipeline.split('.')[0])
                 except Exception as e:
                     pass
 
@@ -210,10 +210,10 @@ class SynapseManagementService:
         pass the linked services parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-        print(root_path)
-        if(os.path.isdir(f'{root_path}/linkedService/') is True):
+
+        if(os.path.isdir(f'{root_path}/') is True):
             if(linked_services is None):
-                linked_services = os.listdir(f'{root_path}/linkedService/')
+                linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
                     self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/linkedService/{ls}')
