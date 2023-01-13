@@ -191,12 +191,12 @@ class OEAInstaller():
         else:
             azure_resource_provision_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_id, self.user_object_id)
 """
-        synapse_management_service.install_all_linked_services(self.synapse_workspace_name, f'{self.framework_path_relative}/linkedService/')
+        synapse_management_service.install_all_linked_services(self.synapse_workspace_name, f'{self.framework_path_relative}/linkedService')
 
-        synapse_management_service.install_all_datasets(self.synapse_workspace_name, f'{self.framework_path_relative}/dataset/')
+        synapse_management_service.install_all_datasets(self.synapse_workspace_name, f'{self.framework_path_relative}/dataset')
 
-        synapse_management_service.install_all_notebooks(self.synapse_workspace_name, f'{self.framework_path_relative}/notebook/')
+        synapse_management_service.install_all_notebooks(self.synapse_workspace_name, f'{self.framework_path_relative}/notebook')
 
-        synapse_management_service.install_all_dataflows(self.synapse_workspace_name, f'{self.framework_path_relative}/dataflow/')
+        synapse_management_service.install_all_dataflows(self.synapse_workspace_name, f'{self.framework_path_relative}/dataflow')
 
-        synapse_management_service.install_all_pipelines(self.synapse_workspace_name, f'{self.framework_path_relative}/pipeline/')
+        synapse_management_service.install_all_pipelines(self.synapse_workspace_name, f'{self.framework_path_relative}/pipeline')
