@@ -147,7 +147,7 @@ class SynapseManagementService:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/dataset/{dataset}')
+                    self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/{dataset}')
                 except Exception as e:
                         #todo: Handle the error
                         pass
@@ -216,6 +216,6 @@ class SynapseManagementService:
                 linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
-                    self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/linkedService/{ls}')
+                    self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/{ls}')
                 except Exception as e:
                     pass
