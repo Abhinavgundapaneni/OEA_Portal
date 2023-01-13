@@ -147,8 +147,7 @@ class SynapseManagementService:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    poller = self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/{dataset}')
-                    result = poller.re
+                    self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/{dataset}')
                 except Exception as e:
                         #todo: Handle the error
                         raise Exception(str(e))
