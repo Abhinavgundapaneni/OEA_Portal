@@ -166,7 +166,7 @@ class OEAInstaller():
         azure_resource_provision_service = AzureResourceProvisionService(azure_client)
         synapse_management_service = SynapseManagementService(azure_client, self.synapse_workspace_name, self.resource_group_name)
 
-        self.verify_permissions(azure_client, azure_resource_provision_service)
+        """self.verify_permissions(azure_client, azure_resource_provision_service)
 
         azure_resource_provision_service.create_resource_group(self.resource_group_name)
 
@@ -190,7 +190,7 @@ class OEAInstaller():
             self.create_role_assignments_to_groups()
         else:
             azure_resource_provision_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_id, self.user_object_id)
-
+"""
         synapse_management_service.install_all_linked_services(self.synapse_workspace_name, f'{self.framework_path_relative}/linkedService/')
 
         synapse_management_service.install_all_datasets(self.synapse_workspace_name, f'{self.framework_path_relative}/dataset/')
