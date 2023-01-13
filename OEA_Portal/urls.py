@@ -24,7 +24,7 @@ urlpatterns = [
     path('', csrf_exempt(HomeView.as_view()), name='home'),
     path('home', csrf_exempt(HomeView.as_view()), name='home'),
     path('logs', csrf_exempt(InstallationLogsView.as_view()), name='logs'),
-    path('install', csrf_exempt(InstallationFormView.as_view()), name='install'),
+    path('install/', csrf_exempt(InstallationFormView.as_view()), name='install'),
     path('metadata', csrf_exempt(MetadataAddView.as_view()), name='metadata'),
     path('metadata_list', csrf_exempt(MetadataListView.as_view()), name='metadata_list')
 ]

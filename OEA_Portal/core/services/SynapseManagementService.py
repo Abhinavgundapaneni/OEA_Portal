@@ -133,3 +133,88 @@ class SynapseManagementService:
             if not 'metadata' in cell: cell['metadata'] = {}
         if 'bigDataPool' in nb_json['properties']:
             nb_json['properties'].pop('bigDataPool', None) #Remove bigDataPool if it's there
+
+    def install_all_datasets(self, synapse_workspace_name, root_path, datasets=None):
+        """
+        Installs all dataflows from the given path on the Synapse workspace.
+        If order of installation is important or you want to install only selected assets in the path,
+        pass the datasets parameter with the required assets in the correct order.
+        If not passed, it will install all the assets in the path.
+        """
+        if(os.path.isdir(f'{root_path}/dataset/') is False):
+            return
+        if datasets is None:
+            datasets = os.listdir(f'{root_path}/dataset/')
+        for dataset in datasets:
+            try:
+                self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/dataset/{dataset}')
+            except Exception as e:
+                    #todo: Handle the error
+                    pass
+
+    def install_all_dataflows(self, synapse_workspace_name, root_path, dataflows=None):
+        """
+        Installs all dataflows from the given path on the Synapse workspace.
+        If order of installation is important or you want to install only selected assets in the path,
+        pass the dataflows parameter with the required assets in the correct order.
+        If not passed, it will install all the assets in the path.
+        """
+        if(os.path.isdir(f'{root_path}/dataflow/') is False):
+            return
+        if(dataflows is None):
+            dataflows = [item for item in os.listdir(f'{root_path}/dataflow/')]
+        for dataflow in dataflows:
+            try:
+                self.create_or_update_dataflow(synapse_workspace_name, f'{root_path}/dataflow/{dataflow}', dataflow.split('.')[0])
+            except Exception as e:
+                pass
+
+    def install_all_notebooks(self, synapse_workspace_name, root_path, notebooks=None):
+        """
+        Installs all notebooks from the given path on the Synapse workspace.
+        If order of installation is important or you want to install only selected assets in the path,
+        pass the notebooks parameter with the required assets in the correct order.
+        If not passed, it will install all the assets in the path.
+        """
+        if(os.path.isdir(f'{root_path}/notebook/') is False):
+            return
+        if(notebooks is None):
+            notebooks = os.listdir(f'{root_path}/notebook/')
+        for notebook in notebooks:
+            try:
+                self.create_notebook(f"{root_path}/notebook/{notebook}", synapse_workspace_name)
+            except Exception as e:
+                pass
+
+    def install_all_pipelines(self, synapse_workspace_name, root_path, pipelines=None):
+        """
+        Installs all pipelines from the given path on the Synapse workspace.
+        If order of installation is important or you want to install only selected assets in the path,
+        pass the pipelines parameter with the required assets in the correct order.
+        If not passed, it will install all the assets in the path.
+        """
+        if(os.path.isdir(f'{root_path}/pipeline/') is False):
+            return
+        if(pipelines is None):
+            pipelines = [item for item in os.listdir(f'{root_path}/pipeline/')]
+        for pipeline in pipelines:
+            try:
+                self.create_or_update_pipeline(synapse_workspace_name, f'{root_path}/pipeline/{pipeline}', pipeline.split('.')[0])
+            except Exception as e:
+                pass
+    def install_all_linked_services(self, synapse_workspace_name, root_path, linked_services=None):
+        """
+        Installs all linked services from the given path on the Synapse workspace.
+        If order of installation is important or you want to install only selected assets in the path,
+        pass the linked services parameter with the required assets in the correct order.
+        If not passed, it will install all the assets in the path.
+        """
+        if(os.path.isdir(f'{root_path}/linkedService/') is False):
+            return
+        if(linked_services is None):
+            linked_services = os.listdir(f'{root_path}/linkedService/')
+        for ls in linked_services:
+            try:
+                self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/linkedService/{ls}')
+            except Exception as e:
+                pass
