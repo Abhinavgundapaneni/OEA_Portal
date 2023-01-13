@@ -209,6 +209,7 @@ class SynapseManagementService:
         pass the linked services parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
+        print('hello')
         if(os.path.isdir(f'{root_path}/linkedService/') is False):
             return
         if(linked_services is None):
