@@ -21,7 +21,7 @@ class SynapseManagementService:
         """
         with open(pipeline_file_path) as f: pipeline_dict = json.load(f)
         if '$schema' not in pipeline_dict.keys():
-            poller = self.azure_client.get_artifacts_client(synapse_workspace).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
+            poller = self.azure_client.get_artifacts_client(synapse_workspace).pipeline.create_or_update_pipeline(pipeline_name, pipeline_dict)
             return poller
 
     def create_or_update_dataflow(self, synapse_workspace, dataflow_file_path):
@@ -29,7 +29,7 @@ class SynapseManagementService:
             Expects the dataflow configuration file in JSON format.
         """
         with open(dataflow_file_path) as f: dataflow_dict = json.load(f)
-        poller = self.azure_client.get_artifacts_client(synapse_workspace).data_flow.begin_create_or_update_dataflow(dataflow_dict['name'], dataflow_dict)
+        poller = self.azure_client.get_artifacts_client(synapse_workspace).data_flow.create_or_update_dataflow(dataflow_dict['name'], dataflow_dict)
         return poller
 
     def create_notebook(self, notebook_filename, synapse_workspace_name):
@@ -48,21 +48,21 @@ class SynapseManagementService:
                 raise ValueError('Notebook format not supported.')
         self.validate_notebook_json(notebook_dict)
         logger.info(f"Creating notebook: {notebook_name}")
-        poller = artifacts_client.notebook.begin_create_or_update_notebook(notebook_name, notebook_dict)
+        poller = artifacts_client.notebook.create_or_update_notebook(notebook_name, notebook_dict)
         return poller #AzureOperationPoller
 
     def create_linked_service(self, workspace_name, linked_service_name, file_path):
         """ Creates a linked service in the Synapse studio.
             Expects a linked service configuration file in JSON format
         """
-        # This currently uses Azure CLI, need to modify this to use Python SDK
+        # todo: modify this to use Python SDK
         os.system(f"az synapse linked-service create --workspace-name {workspace_name} --name {linked_service_name} --file @{file_path} -o none")
 
     def create_dataset(self, workspace_name, dataset_name, file_path):
         """ Creates a dataset in the Synapse studio.
             Expects a dataset configuration file in JSON format
         """
-        # This currently uses Azure CLI, need to modify this to use Python SDK
+        # todo: modify this to use Python SDK
         os.system(f"az synapse dataset create --workspace-name {workspace_name} --name {dataset_name} --file @{file_path} -o none")
 
     def add_firewall_rule_for_synapse(self, rule_name, start_ip_address, end_ip_address, synapse_workspace_name):
@@ -147,10 +147,11 @@ class SynapseManagementService:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/{dataset}')
+                    poller = self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/{dataset}')
+                    result = poller.re
                 except Exception as e:
                         #todo: Handle the error
-                        pass
+                        raise Exception(str(e))
 
     def install_all_dataflows(self, synapse_workspace_name, root_path, dataflows=None):
         """
@@ -165,9 +166,9 @@ class SynapseManagementService:
                 dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    self.create_or_update_dataflow(synapse_workspace_name, f'{root_path}/{dataflow}', dataflow.split('.')[0])
+                    poller = self.create_or_update_dataflow(synapse_workspace_name, f'{root_path}/{dataflow}', dataflow.split('.')[0])
                 except Exception as e:
-                    pass
+                    raise Exception(str(e))
 
     def install_all_notebooks(self, synapse_workspace_name, root_path, notebooks=None):
         """
@@ -182,9 +183,9 @@ class SynapseManagementService:
                 notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    self.create_notebook(f"{root_path}/{notebook}", synapse_workspace_name)
+                    poller = self.create_notebook(f"{root_path}/{notebook}", synapse_workspace_name)
                 except Exception as e:
-                    pass
+                    raise Exception(str(e))
 
     def install_all_pipelines(self, synapse_workspace_name, root_path, pipelines=None):
         """
@@ -199,9 +200,9 @@ class SynapseManagementService:
                 pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    self.create_or_update_pipeline(synapse_workspace_name, f'{root_path}/{pipeline}', pipeline.split('.')[0])
+                    poller = self.create_or_update_pipeline(synapse_workspace_name, f'{root_path}/{pipeline}', pipeline.split('.')[0])
                 except Exception as e:
-                    pass
+                    raise Exception(str(e))
 
     def install_all_linked_services(self, synapse_workspace_name, root_path, linked_services=None):
         """
@@ -216,6 +217,6 @@ class SynapseManagementService:
                 linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
-                    self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/{ls}')
+                    poller = self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/{ls}')
                 except Exception as e:
-                    pass
+                    raise Exception(str(e))

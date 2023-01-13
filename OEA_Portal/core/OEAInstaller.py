@@ -74,60 +74,6 @@ class OEAInstaller():
                     "max_node_count": 10
                 }
             )
-    def install_linked_services(self, request_id, synapse_management_service:SynapseManagementService):
-        if(os.path.isdir(f'{self.framework_path_relative}/linkedService/') is False):
-            return
-        linked_services = os.listdir(f'{self.framework_path_relative}/linkedService/')
-        for ls in linked_services:
-            try:
-                self.replace_strings(f'{self.framework_path_relative}/linkedService/{ls}')
-                synapse_management_service.create_linked_service(self.synapse_workspace_name, ls.split('.')[0], f'{self.framework_path_relative}/linkedService/{ls}')
-            except Exception as e:
-                pass
-
-    def install_datasets(self, request_id, synapse_management_service:SynapseManagementService):
-        if(os.path.isdir(f'{self.framework_path_relative}/dataset/') is False):
-            return
-        datasets = os.listdir(f'{self.framework_path_relative}/dataset/')
-        for dataset in datasets:
-            try:
-                self.replace_strings(f'{self.framework_path_relative}/dataset/{dataset}')
-                synapse_management_service.create_dataset(self.synapse_workspace_name, dataset.split('.')[0], f'{self.framework_path_relative}/dataset/{dataset}')
-            except Exception as e:
-                pass
-
-    def install_notebooks(self, request_id, synapse_management_service:SynapseManagementService):
-        if(os.path.isdir(f'{self.framework_path_relative}/notebook/') is False):
-            return
-        notebooks = os.listdir(f'{self.framework_path_relative}/notebook/')
-        for notebook in notebooks:
-            try:
-                self.replace_strings(f"{self.framework_path_relative}/notebook/{notebook}")
-                synapse_management_service.create_notebook(f"{self.framework_path_relative}/notebook/{notebook}", self.synapse_workspace_name)
-            except Exception as e:
-                pass
-
-    def install_pipelines(self, request_id, synapse_management_service:SynapseManagementService):
-        if(os.path.isdir(f'{self.framework_path_relative}/pipeline/') is False):
-            return
-        pipelines = [item for item in os.listdir(f'{self.framework_path_relative}/pipeline/') if os.path.isfile(f'{self.framework_path_relative}/pipeline/{item}')]
-        for pipeline in pipelines:
-            try:
-                self.replace_strings(f'{self.framework_path_relative}/pipeline/{pipeline}')
-                synapse_management_service.create_or_update_pipeline(self.synapse_workspace_name, f'{self.framework_path_relative}/pipeline/{pipeline}', pipeline.split('.')[0])
-            except Exception as e:
-                pass
-
-    def install_dataflows(self, request_id, synapse_management_service:SynapseManagementService):
-        if(os.path.isdir(f'{self.framework_path_relative}/dataflow/') is False):
-            return
-        dataflows = [item for item in os.listdir(f'{self.framework_path_relative}/dataflow/') if os.path.isfile(f'{self.framework_path_relative}/pipeline/{item}')]
-        for dataflow in dataflows:
-            try:
-                self.replace_strings(f'{self.framework_path_relative}/dataflow/{dataflow}')
-                synapse_management_service.create_or_update_dataflow(self.synapse_workspace_name, f'{self.framework_path_relative}/dataflow/{dataflow}', dataflow.split('.')[0])
-            except Exception as e:
-                pass
 
     def create_aad_groups(self):
         #todo: Migrate this step to use Python SDK.
@@ -143,6 +89,7 @@ class OEAInstaller():
         os.system(f"az ad group create --display-name \"{self.eds_group_name}\" --mail-nickname 'EduAnalyticsExternalDataScientists' -o none")
         os.system(f"az ad group owner add --group \"{self.eds_group_name}\" --owner-object-id {self.user_object_id} -o none")
         self.external_data_scientists_id = os.popen(f"az ad group show --group \"{self.eds_group_name}\" --query id --output tsv").read()[:-1]
+
     def create_role_assignments_to_groups(self, provision_resource_service):
         provision_resource_service.create_role_assignment('Owner', f"/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/", self.global_admins_id)
         # Assign "Storage Blob Data Contributor" to security groups to allow users to query data via Synapse studio
@@ -154,10 +101,12 @@ class OEAInstaller():
         provision_resource_service.create_role_assignment('Storage Blob Data Contributor', self.get_container_resourceId('stage3'), self.external_data_scientists_id)
         provision_resource_service.create_role_assignment('Storage Blob Data Contributor', self.get_container_resourceId('oea'), self.external_data_scientists_id)
         provision_resource_service.create_role_assignment('Reader', self.storage_account_id, self.data_engineers_id)
+
     def download_and_extract_framework(self):
         zip_path, _ = urllib.request.urlretrieve(self.framework_zip_url)
         with zipfile.ZipFile(zip_path, "r") as f:
             f.extractall(f"{BASE_DIR}/temp")
+
     def install(self, request_id=None):
         if request_id is None:
             request_id = uuid.uuid4()
