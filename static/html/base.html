@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OEA Portal</title>
+  <style type="text/css">
+    body {
+      width: 1600px;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  {% load  static %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+  <div>
+    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-dark">
+      <a class="navbar-brand" href="{{base_url}}/home"><img src="{{base_url}}/static/media/oea-logo.png"  width="50" height="30"></a>
+      <a class="navbar-brand" href="{{base_url}}/home">Open Education Analytics</a>
+      <a class="navbar-brand  my-2 my-sm-0" href="{{base_url}}/home">Home</a>
+      <a class="navbar-brand  my-2 my-sm-0" href="{{base_url}}/install">Getting Started</a>
+      <a class="navbar-brand  my-2 my-sm-0" href="#">Documentation</a>
+      <a class="navbar-brand  my-2 my-sm-0" href="{{base_url}}/metadata">Metadata</a>
+    </nav>
+    </div>
+    <hr>
+    {% if messages %}
+        {% for message in messages %}
+          <p style="color: green">{{ message }}</p>
+        {% endfor %}
+      <hr>
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+  </div>
+</body>
+</html>

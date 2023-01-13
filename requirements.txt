@@ -1,0 +1,10 @@
+azure-mgmt-authorization
+azure-mgmt-resource
+azure-mgmt-synapse
+azure-mgmt-storage
+azure-mgmt-keyvault
+azure-synapse-artifacts
+azure-identity
+azure-cli-core
+azure-keyvault-secrets
+azure-storage-file-datalake

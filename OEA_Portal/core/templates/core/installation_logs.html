@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Installation Logs</h2>
+
+  <ul>
+    {% for log in object_list %}
+      <li>{{ log.timestamp }} - {{ log.message }} </li>
+    {% empty %}
+      <li>No logs. <a href="{% url 'install' %}">Install.</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}
