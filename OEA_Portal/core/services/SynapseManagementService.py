@@ -160,7 +160,7 @@ class SynapseManagementService:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    self.create_dataset(config['workspace'], dataset.split('.')[0], f'{root_path}/{dataset}')
+                    self.create_dataset(config, dataset.split('.')[0], f'{root_path}/{dataset}')
                 except Exception as e:
                         #todo: Handle the error
                         raise Exception(str(e))
@@ -178,7 +178,7 @@ class SynapseManagementService:
                 dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    self.create_or_update_dataflow(config['workspace'], f'{root_path}/{dataflow}', dataflow.split('.')[0])
+                    self.create_or_update_dataflow(config, f'{root_path}/{dataflow}', dataflow.split('.')[0])
                 except Exception as e:
                     raise Exception(str(e))
 
@@ -195,7 +195,7 @@ class SynapseManagementService:
                 notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    self.create_notebook(f"{root_path}/{notebook}", config['workspace'])
+                    self.create_notebook(f"{root_path}/{notebook}", config)
                 except Exception as e:
                     raise Exception(str(e))
 
@@ -212,7 +212,7 @@ class SynapseManagementService:
                 pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    self.create_or_update_pipeline(config['workspace'], f'{root_path}/{pipeline}', pipeline.split('.')[0])
+                    self.create_or_update_pipeline(config, f'{root_path}/{pipeline}', pipeline.split('.')[0])
                 except Exception as e:
                     raise Exception(str(e))
 
@@ -229,6 +229,6 @@ class SynapseManagementService:
                 linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
-                    self.create_linked_service(config['workspace'], ls.split('.')[0], f'{root_path}/{ls}')
+                    self.create_linked_service(config, ls.split('.')[0], f'{root_path}/{ls}')
                 except Exception as e:
                     raise Exception(str(e))
