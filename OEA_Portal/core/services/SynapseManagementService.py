@@ -21,34 +21,34 @@ class SynapseManagementService:
                         .replace('yoursynapseworkspace', config['workspace'])
         return data
 
-    def create_or_update_pipeline(self, synapse_workspace, pipeline_file_path, pipeline_name):
+    def create_or_update_pipeline(self, config, pipeline_file_path, pipeline_name):
         """ Creates or updates the Pipeline in the given Synapse studio.
             Expects the pipeline configuration file in JSON format.
         """
-        with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read()))
+        with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read(), config))
         if '$schema' not in pipeline_dict.keys():
-            poller = self.azure_client.get_artifacts_client(synapse_workspace).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
+            poller = self.azure_client.get_artifacts_client(config['workspace']).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
             return poller.result()
 
-    def create_or_update_dataflow(self, synapse_workspace, dataflow_file_path):
+    def create_or_update_dataflow(self, config, dataflow_file_path):
         """ Creates or updates the Dataflow in the given Synapse studio.
             Expects the dataflow configuration file in JSON format.
         """
-        with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read()))
-        poller = self.azure_client.get_artifacts_client(synapse_workspace).data_flow.create_or_update_dataflow(dataflow_dict['name'], dataflow_dict)
+        with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read(), config))
+        poller = self.azure_client.get_artifacts_client(config['workspace']).data_flow.create_or_update_dataflow(dataflow_dict['name'], dataflow_dict)
         return poller
 
-    def create_notebook(self, notebook_filename, synapse_workspace_name):
+    def create_notebook(self, notebook_filename, config):
         """ Creates or updates the Notebook in the given Synapse studio.
             Expects the dataflow configuration file in JSON or ipynb format.
         """
-        artifacts_client = self.azure_client.get_artifacts_client(synapse_workspace_name)
+        artifacts_client = self.azure_client.get_artifacts_client(config['workspace'])
         with open(notebook_filename) as f:
             if(notebook_filename.split('.')[-1] == 'json'):
-                notebook_dict = json.loads(self.replace_strings(f.read()))
+                notebook_dict = json.loads(self.replace_strings(f.read(), config))
                 notebook_name = notebook_dict['name']
             elif(notebook_filename.split('.')[-1] == 'ipynb'):
-                properties = json.loads(self.replace_strings(f.read()))
+                properties = json.loads(self.replace_strings(f.read(), config))
                 notebook_name = notebook_filename.split('/')[-1].split('.')[0]
                 notebook_dict = {"name": notebook_name, "properties": properties}
             else:
@@ -58,25 +58,25 @@ class SynapseManagementService:
         poller = artifacts_client.notebook.begin_create_or_update_notebook(notebook_name, notebook_dict)
         return poller.result() #AzureOperationPoller
 
-    def create_linked_service(self, workspace_name, linked_service_name, file_path):
+    def create_linked_service(self, config, linked_service_name, file_path):
         """ Creates a linked service in the Synapse studio.
             Expects a linked service configuration file in JSON format
         """
         # todo: modify this to use Python SDK
-        with open(file_path, 'r') as f: data = self.replace_strings(f.read())
+        with open(file_path, 'r') as f: data = self.replace_strings(f.read(), config)
         with open(file_path, 'r') as f: f.write(data)
 
-        os.system(f"az synapse linked-service create --workspace-name {workspace_name} --name {linked_service_name} --file @{file_path} -o none")
+        os.system(f"az synapse linked-service create --workspace-name {config['workspace']} --name {linked_service_name} --file @{file_path} -o none")
 
-    def create_dataset(self, workspace_name, dataset_name, file_path):
+    def create_dataset(self, config, dataset_name, file_path):
         """ Creates a dataset in the Synapse studio.
             Expects a dataset configuration file in JSON format
         """
         # todo: modify this to use Python SDK
-        with open(file_path, 'r') as f: data = self.replace_strings(f.read())
+        with open(file_path, 'r') as f: data = self.replace_strings(f.read(), config)
         with open(file_path, 'r') as f: f.write(data)
 
-        os.system(f"az synapse dataset create --workspace-name {workspace_name} --name {dataset_name} --file @{file_path} -o none")
+        os.system(f"az synapse dataset create --workspace-name {config['workspace']} --name {dataset_name} --file @{file_path} -o none")
 
     def add_firewall_rule_for_synapse(self, rule_name, start_ip_address, end_ip_address, synapse_workspace_name):
         """ Create a Firewall rule for the Azure Synapse Studio """
