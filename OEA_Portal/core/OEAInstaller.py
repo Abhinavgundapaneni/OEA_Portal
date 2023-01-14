@@ -9,6 +9,7 @@ from .models import InstallationLogs
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.services.AzureResourceProvisionService import AzureResourceProvisionService
 from OEA_Portal.core.services.SynapseManagementService import SynapseManagementService
+from OEA_Portal.core.services.ModuleInstallationService import install_edfi_module
 import logging
 class OEAInstaller():
     #todo: Add class description.
@@ -114,7 +115,7 @@ class OEAInstaller():
         resource_config['storage_account'] = self.storage_account_name
         resource_config['resource_group'] = self.resource_group_name
         resource_config['workspace'] = self.synapse_workspace_name
-        """self.verify_permissions(azure_client, azure_resource_provision_service)
+        self.verify_permissions(azure_client, azure_resource_provision_service)
 
         azure_resource_provision_service.create_resource_group(self.resource_group_name)
 
@@ -138,13 +139,23 @@ class OEAInstaller():
             self.create_role_assignments_to_groups()
         else:
             azure_resource_provision_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_id, self.user_object_id)
-        """
+
         synapse_management_service.install_all_linked_services(resource_config, f'{self.framework_path_relative}/linkedService')
 
         synapse_management_service.install_all_datasets(resource_config, f'{self.framework_path_relative}/dataset')
 
-        synapse_management_service.install_all_notebooks(resource_config, f'{self.framework_path_relative}/notebook')
+        synapse_management_service.install_all_notebooks(resource_config, f'{self.framework_path_relative}/notebook', wait_till_completion=False)
 
-        synapse_management_service.install_all_dataflows(resource_config, f'{self.framework_path_relative}/dataflow')
+        synapse_management_service.install_all_dataflows(resource_config, f'{self.framework_path_relative}/dataflow', wait_till_completion=False)
 
         synapse_management_service.install_all_pipelines(resource_config, f'{self.framework_path_relative}/pipeline')
+
+    def install_edfi_module(self):
+        azure_client = AzureClient(self.tenant_id, self.subscription_id, location=self.location, default_tags=self.tags)
+        synapse_management_service = SynapseManagementService(azure_client, self.synapse_workspace_name, self.resource_group_name)
+        resource_config = {}
+        resource_config['keyvault'] = self.keyvault_name
+        resource_config['storage_account'] = self.storage_account_name
+        resource_config['resource_group'] = self.resource_group_name
+        resource_config['workspace'] = self.synapse_workspace_name
+        install_edfi_module(synapse_management_service, resource_config, '0.2')
