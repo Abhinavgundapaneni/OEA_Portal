@@ -48,8 +48,9 @@ class InstallationFormView(FormView):
 
         request_id = uuid.uuid4()
         oea_installer = OEAInstaller(tenant_id, subscription_id, oea_suffix, location, include_groups)
-        oea_installer.install(request_id)
-        self.request.session['request_id'] = str(request_id)
+        # oea_installer.install(request_id)
+        #self.request.session['request_id'] = str(request_id)
+        oea_installer.install_edfi_module()
         return redirect('logs')
 
 class MetadataAddView(TemplateView):
