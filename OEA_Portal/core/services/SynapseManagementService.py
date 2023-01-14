@@ -21,8 +21,8 @@ class SynapseManagementService:
         """
         with open(pipeline_file_path) as f: pipeline_dict = json.load(f)
         if '$schema' not in pipeline_dict.keys():
-            poller = self.azure_client.get_artifacts_client(synapse_workspace).pipeline.create_or_update_pipeline(pipeline_name, pipeline_dict)
-            return poller
+            poller = self.azure_client.get_artifacts_client(synapse_workspace).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
+            return poller.result()
 
     def create_or_update_dataflow(self, synapse_workspace, dataflow_file_path):
         """ Creates or updates the Dataflow in the given Synapse studio.
