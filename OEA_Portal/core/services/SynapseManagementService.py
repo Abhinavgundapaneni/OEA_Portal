@@ -187,7 +187,7 @@ class SynapseManagementService:
                 dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    self.create_or_update_dataflow(config, f'{root_path}/{dataflow}', dataflow.split('.')[0], wait_till_completion)
+                    self.create_or_update_dataflow(config, f'{root_path}/{dataflow}', wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
