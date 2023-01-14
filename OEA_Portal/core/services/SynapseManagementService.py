@@ -63,9 +63,9 @@ class SynapseManagementService:
             Expects a linked service configuration file in JSON format
         """
         # todo: modify this to use Python SDK
-        with open(file_path, 'wt') as f:
-            data = self.replace_strings(f.read())
-            f.write(data)
+        with open(file_path, 'r') as f: data = self.replace_strings(f.read())
+        with open(file_path, 'r') as f: f.write(data)
+
         os.system(f"az synapse linked-service create --workspace-name {workspace_name} --name {linked_service_name} --file @{file_path} -o none")
 
     def create_dataset(self, workspace_name, dataset_name, file_path):
@@ -73,9 +73,9 @@ class SynapseManagementService:
             Expects a dataset configuration file in JSON format
         """
         # todo: modify this to use Python SDK
-        with open(file_path, 'wt') as f:
-            data = self.replace_strings(f.read())
-            f.write(data)
+        with open(file_path, 'r') as f: data = self.replace_strings(f.read())
+        with open(file_path, 'r') as f: f.write(data)
+
         os.system(f"az synapse dataset create --workspace-name {workspace_name} --name {dataset_name} --file @{file_path} -o none")
 
     def add_firewall_rule_for_synapse(self, rule_name, start_ip_address, end_ip_address, synapse_workspace_name):
