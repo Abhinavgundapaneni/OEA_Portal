@@ -42,7 +42,8 @@ class SynapseManagementService:
                 notebook_dict = json.load(f)
                 notebook_name = notebook_dict['name']
             elif(notebook_filename.split('.')[-1] == 'ipynb'):
-                notebook_dict = json.loads(f.read())
+                properties = json.loads(f.read())
+                notebook_dict = {"name": notebook_name, "properties": properties}
                 notebook_name = notebook_filename.split('/')[-1].split('.')[0]
             else:
                 raise ValueError('Notebook format not supported.')
@@ -182,7 +183,7 @@ class SynapseManagementService:
                 notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    poller = self.create_notebook(f"{root_path}/{notebook}", synapse_workspace_name)
+                    self.create_notebook(f"{root_path}/{notebook}", synapse_workspace_name)
                 except Exception as e:
                     raise Exception(str(e))
 
@@ -199,7 +200,7 @@ class SynapseManagementService:
                 pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    poller = self.create_or_update_pipeline(synapse_workspace_name, f'{root_path}/{pipeline}', pipeline.split('.')[0])
+                    self.create_or_update_pipeline(synapse_workspace_name, f'{root_path}/{pipeline}', pipeline.split('.')[0])
                 except Exception as e:
                     raise Exception(str(e))
 
@@ -216,6 +217,6 @@ class SynapseManagementService:
                 linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
-                    poller = self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/{ls}')
+                    self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/{ls}')
                 except Exception as e:
                     raise Exception(str(e))
