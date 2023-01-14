@@ -40,14 +40,7 @@ class OEAInstaller():
         self.logger = logging.getLogger('OEAInstaller')
     def log_entry_to_db(request_id, action, message):
         InstallationLogs.objects.create(request_id=request_id, action=action, message=message)
-    def replace_strings(self, file_path):
-        with open(file_path) as f:
-            data = f.read()
-            data = data.replace('yourkeyvault', self.keyvault_name)\
-                        .replace('yourstorageaccount', self.storage_account_name)\
-                        .replace('yoursynapseworkspace', self.synapse_workspace_name)
-        with open(file_path, 'wt') as f:
-            f.write(data)
+
     def verify_permissions(self, azure_client, resouce_provision_service):
         """ Check if user has "Owner" Permission on the subscription, fail if not """
         owner_role_def = resouce_provision_service.get_role('Owner', f"/subscriptions/{self.subscription_id}")
@@ -55,9 +48,11 @@ class OEAInstaller():
         if(len(owner_role_assignments) == 0):
             self.logger.error("--> Setup failed! The user does not have the \"Owner\" Permission on the Azure subscription")
             raise PermissionError("User does not enough permissions.")
+
     def get_container_resourceId(self, container):
         """ Returns the Resource Id of the given container """
         return f"/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/providers/Microsoft.Storage/storageAccounts/{self.storage_account_name}/blobServices/default/containers/{container}"
+
     def create_synapse_architecture(self, azure_resource_provision_service, synapse_management_service):
         self.synapse_workspace_object = azure_resource_provision_service.create_synapse_workspace(self.synapse_workspace_name, self.storage_account_name)
         azure_resource_provision_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_object.id, self.synapse_workspace_object.identity.principal_id)
@@ -114,8 +109,12 @@ class OEAInstaller():
         azure_client = AzureClient(self.tenant_id, self.subscription_id, location=self.location, default_tags=self.tags)
         azure_resource_provision_service = AzureResourceProvisionService(azure_client)
         synapse_management_service = SynapseManagementService(azure_client, self.synapse_workspace_name, self.resource_group_name)
-
-        """self.verify_permissions(azure_client, azure_resource_provision_service)
+        resource_config = {}
+        resource_config['keyvault'] = self.keyvault_name
+        resource_config['storage_account'] = self.storage_account_name
+        resource_config['resource_group'] = self.resource_group_name
+        resource_config['workspace'] = self.synapse_workspace_name
+        self.verify_permissions(azure_client, azure_resource_provision_service)
 
         azure_resource_provision_service.create_resource_group(self.resource_group_name)
 
@@ -139,13 +138,13 @@ class OEAInstaller():
             self.create_role_assignments_to_groups()
         else:
             azure_resource_provision_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_id, self.user_object_id)
-"""
-        # synapse_management_service.install_all_linked_services(self.synapse_workspace_name, f'{self.framework_path_relative}/linkedService')
 
-        # synapse_management_service.install_all_datasets(self.synapse_workspace_name, f'{self.framework_path_relative}/dataset')
+        synapse_management_service.install_all_linked_services(resource_config, f'{self.framework_path_relative}/linkedService')
 
-        synapse_management_service.install_all_notebooks(self.synapse_workspace_name, f'{self.framework_path_relative}/notebook')
+        synapse_management_service.install_all_datasets(resource_config, f'{self.framework_path_relative}/dataset')
 
-        synapse_management_service.install_all_dataflows(self.synapse_workspace_name, f'{self.framework_path_relative}/dataflow')
+        synapse_management_service.install_all_notebooks(resource_config, f'{self.framework_path_relative}/notebook')
 
-        synapse_management_service.install_all_pipelines(self.synapse_workspace_name, f'{self.framework_path_relative}/pipeline')
+        synapse_management_service.install_all_dataflows(resource_config, f'{self.framework_path_relative}/dataflow')
+
+        synapse_management_service.install_all_pipelines(resource_config, f'{self.framework_path_relative}/pipeline')

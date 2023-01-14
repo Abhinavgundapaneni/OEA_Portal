@@ -15,6 +15,15 @@ class SynapseManagementService:
         self.workspace_name = workspace_name
         self.resource_group_name = resource_group_name
 
+    def replace_strings(self, file_path, config):
+        with open(file_path) as f:
+            data = f.read()
+            data = data.replace('yourkeyvault', config['keyvault'])\
+                        .replace('yourstorageaccount', config['storage_account'])\
+                        .replace('yoursynapseworkspace', config['workspace'])
+        with open(file_path, 'wt') as f:
+            f.write(data)
+
     def create_or_update_pipeline(self, synapse_workspace, pipeline_file_path, pipeline_name):
         """ Creates or updates the Pipeline in the given Synapse studio.
             Expects the pipeline configuration file in JSON format.
@@ -135,7 +144,7 @@ class SynapseManagementService:
         if 'bigDataPool' in nb_json['properties']:
             nb_json['properties'].pop('bigDataPool', None) #Remove bigDataPool if it's there
 
-    def install_all_datasets(self, synapse_workspace_name, root_path, datasets=None):
+    def install_all_datasets(self, config, root_path, datasets=None):
         """
         Installs all dataflows from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -148,12 +157,12 @@ class SynapseManagementService:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    self.create_dataset(synapse_workspace_name, dataset.split('.')[0], f'{root_path}/{dataset}')
+                    self.create_dataset(config['workspace'], dataset.split('.')[0], f'{root_path}/{dataset}')
                 except Exception as e:
                         #todo: Handle the error
                         raise Exception(str(e))
 
-    def install_all_dataflows(self, synapse_workspace_name, root_path, dataflows=None):
+    def install_all_dataflows(self, config, root_path, dataflows=None):
         """
         Installs all dataflows from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -166,11 +175,11 @@ class SynapseManagementService:
                 dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    poller = self.create_or_update_dataflow(synapse_workspace_name, f'{root_path}/{dataflow}', dataflow.split('.')[0])
+                    self.create_or_update_dataflow(config['workspace'], f'{root_path}/{dataflow}', dataflow.split('.')[0])
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_notebooks(self, synapse_workspace_name, root_path, notebooks=None):
+    def install_all_notebooks(self, config, root_path, notebooks=None):
         """
         Installs all notebooks from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -183,11 +192,11 @@ class SynapseManagementService:
                 notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    self.create_notebook(f"{root_path}/{notebook}", synapse_workspace_name)
+                    self.create_notebook(f"{root_path}/{notebook}", config['workspace'])
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_pipelines(self, synapse_workspace_name, root_path, pipelines=None):
+    def install_all_pipelines(self, config, root_path, pipelines=None):
         """
         Installs all pipelines from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -200,11 +209,11 @@ class SynapseManagementService:
                 pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    self.create_or_update_pipeline(synapse_workspace_name, f'{root_path}/{pipeline}', pipeline.split('.')[0])
+                    self.create_or_update_pipeline(config['workspace'], f'{root_path}/{pipeline}', pipeline.split('.')[0])
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_linked_services(self, synapse_workspace_name, root_path, linked_services=None):
+    def install_all_linked_services(self, config, root_path, linked_services=None):
         """
         Installs all linked services from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -217,6 +226,6 @@ class SynapseManagementService:
                 linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
-                    self.create_linked_service(synapse_workspace_name, ls.split('.')[0], f'{root_path}/{ls}')
+                    self.create_linked_service(config['workspace'], ls.split('.')[0], f'{root_path}/{ls}')
                 except Exception as e:
                     raise Exception(str(e))
