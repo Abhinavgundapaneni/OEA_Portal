@@ -46,7 +46,7 @@ class SynapseManagementService:
                 notebook_name = notebook_filename.split('/')[-1].split('.')[0]
             else:
                 raise ValueError('Notebook format not supported.')
-        self.validate_notebook_json(notebook_dict)
+        # self.validate_notebook_json(notebook_dict)
         logger.info(f"Creating notebook: {notebook_name}")
         poller = artifacts_client.notebook.create_or_update_notebook(notebook_name, notebook_dict)
         return poller #AzureOperationPoller
