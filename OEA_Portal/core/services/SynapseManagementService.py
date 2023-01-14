@@ -15,20 +15,17 @@ class SynapseManagementService:
         self.workspace_name = workspace_name
         self.resource_group_name = resource_group_name
 
-    def replace_strings(self, file_path, config):
-        with open(file_path) as f:
-            data = f.read()
-            data = data.replace('yourkeyvault', config['keyvault'])\
+    def replace_strings(self, data, config):
+        data = data.replace('yourkeyvault', config['keyvault'])\
                         .replace('yourstorageaccount', config['storage_account'])\
                         .replace('yoursynapseworkspace', config['workspace'])
-        with open(file_path, 'wt') as f:
-            f.write(data)
+        return data
 
     def create_or_update_pipeline(self, synapse_workspace, pipeline_file_path, pipeline_name):
         """ Creates or updates the Pipeline in the given Synapse studio.
             Expects the pipeline configuration file in JSON format.
         """
-        with open(pipeline_file_path) as f: pipeline_dict = json.load(f)
+        with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read()))
         if '$schema' not in pipeline_dict.keys():
             poller = self.azure_client.get_artifacts_client(synapse_workspace).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
             return poller.result()
@@ -37,7 +34,7 @@ class SynapseManagementService:
         """ Creates or updates the Dataflow in the given Synapse studio.
             Expects the dataflow configuration file in JSON format.
         """
-        with open(dataflow_file_path) as f: dataflow_dict = json.load(f)
+        with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read()))
         poller = self.azure_client.get_artifacts_client(synapse_workspace).data_flow.create_or_update_dataflow(dataflow_dict['name'], dataflow_dict)
         return poller
 
@@ -48,15 +45,15 @@ class SynapseManagementService:
         artifacts_client = self.azure_client.get_artifacts_client(synapse_workspace_name)
         with open(notebook_filename) as f:
             if(notebook_filename.split('.')[-1] == 'json'):
-                notebook_dict = json.load(f)
+                notebook_dict = json.loads(self.replace_strings(f.read()))
                 notebook_name = notebook_dict['name']
             elif(notebook_filename.split('.')[-1] == 'ipynb'):
-                properties = json.loads(f.read())
+                properties = json.loads(self.replace_strings(f.read()))
                 notebook_name = notebook_filename.split('/')[-1].split('.')[0]
                 notebook_dict = {"name": notebook_name, "properties": properties}
             else:
                 raise ValueError('Notebook format not supported.')
-        # self.validate_notebook_json(notebook_dict)
+        self.validate_notebook_json(notebook_dict)
         logger.info(f"Creating notebook: {notebook_name}")
         poller = artifacts_client.notebook.begin_create_or_update_notebook(notebook_name, notebook_dict)
         return poller.result() #AzureOperationPoller
@@ -66,6 +63,9 @@ class SynapseManagementService:
             Expects a linked service configuration file in JSON format
         """
         # todo: modify this to use Python SDK
+        with open(file_path, 'wt') as f:
+            data = self.replace_strings(f.read())
+            f.write(data)
         os.system(f"az synapse linked-service create --workspace-name {workspace_name} --name {linked_service_name} --file @{file_path} -o none")
 
     def create_dataset(self, workspace_name, dataset_name, file_path):
@@ -73,6 +73,9 @@ class SynapseManagementService:
             Expects a dataset configuration file in JSON format
         """
         # todo: modify this to use Python SDK
+        with open(file_path, 'wt') as f:
+            data = self.replace_strings(f.read())
+            f.write(data)
         os.system(f"az synapse dataset create --workspace-name {workspace_name} --name {dataset_name} --file @{file_path} -o none")
 
     def add_firewall_rule_for_synapse(self, rule_name, start_ip_address, end_ip_address, synapse_workspace_name):
