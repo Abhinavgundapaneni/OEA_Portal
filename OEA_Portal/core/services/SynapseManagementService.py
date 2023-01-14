@@ -21,24 +21,30 @@ class SynapseManagementService:
                         .replace('yoursynapseworkspace', config['workspace'])
         return data
 
-    def create_or_update_pipeline(self, config, pipeline_file_path, pipeline_name):
+    def create_or_update_pipeline(self, config, pipeline_file_path, pipeline_name, wait_till_completion):
         """ Creates or updates the Pipeline in the given Synapse studio.
             Expects the pipeline configuration file in JSON format.
         """
         with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read(), config))
         if '$schema' not in pipeline_dict.keys():
             poller = self.azure_client.get_artifacts_client(config['workspace']).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
-            return poller.result()
+            if(wait_till_completion):
+                return poller.result() #AzureOperationPoller
+            else:
+                return poller
 
-    def create_or_update_dataflow(self, config, dataflow_file_path):
+    def create_or_update_dataflow(self, config, dataflow_file_path, wait_till_completion):
         """ Creates or updates the Dataflow in the given Synapse studio.
             Expects the dataflow configuration file in JSON format.
         """
         with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read(), config))
-        poller = self.azure_client.get_artifacts_client(config['workspace']).data_flow.create_or_update_dataflow(dataflow_dict['name'], dataflow_dict)
-        return poller
+        poller = self.azure_client.get_artifacts_client(config['workspace']).data_flow.begin_create_or_update_dataflow(dataflow_dict['name'], dataflow_dict)
+        if(wait_till_completion):
+            return poller.result() #AzureOperationPoller
+        else:
+            return poller
 
-    def create_notebook(self, notebook_filename, config):
+    def create_notebook(self, notebook_filename, config, wait_till_completion):
         """ Creates or updates the Notebook in the given Synapse studio.
             Expects the dataflow configuration file in JSON or ipynb format.
         """
@@ -56,25 +62,28 @@ class SynapseManagementService:
         self.validate_notebook_json(notebook_dict)
         logger.info(f"Creating notebook: {notebook_name}")
         poller = artifacts_client.notebook.begin_create_or_update_notebook(notebook_name, notebook_dict)
-        return poller.result() #AzureOperationPoller
+        if(wait_till_completion):
+            return poller.result() #AzureOperationPoller
+        else:
+            return poller
 
-    def create_linked_service(self, config, linked_service_name, file_path):
+    def create_linked_service(self, config, linked_service_name, file_path, wait_till_completion):
         """ Creates a linked service in the Synapse studio.
             Expects a linked service configuration file in JSON format
         """
         # todo: modify this to use Python SDK
         with open(file_path, 'r') as f: data = self.replace_strings(f.read(), config)
-        with open(file_path, 'r') as f: f.write(data)
+        with open(file_path, 'wt') as f: f.write(data)
 
         os.system(f"az synapse linked-service create --workspace-name {config['workspace']} --name {linked_service_name} --file @{file_path} -o none")
 
-    def create_dataset(self, config, dataset_name, file_path):
+    def create_dataset(self, config, dataset_name, file_path, wait_till_completion):
         """ Creates a dataset in the Synapse studio.
             Expects a dataset configuration file in JSON format
         """
         # todo: modify this to use Python SDK
         with open(file_path, 'r') as f: data = self.replace_strings(f.read(), config)
-        with open(file_path, 'r') as f: f.write(data)
+        with open(file_path, 'wt') as f: f.write(data)
 
         os.system(f"az synapse dataset create --workspace-name {config['workspace']} --name {dataset_name} --file @{file_path} -o none")
 
@@ -147,9 +156,9 @@ class SynapseManagementService:
         if 'bigDataPool' in nb_json['properties']:
             nb_json['properties'].pop('bigDataPool', None) #Remove bigDataPool if it's there
 
-    def install_all_datasets(self, config, root_path, datasets=None):
+    def install_all_datasets(self, config, root_path, datasets=None, wait_till_completion=True):
         """
-        Installs all dataflows from the given path on the Synapse workspace.
+        Installs all datasets from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
         pass the datasets parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
@@ -160,12 +169,12 @@ class SynapseManagementService:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    self.create_dataset(config, dataset.split('.')[0], f'{root_path}/{dataset}')
+                    self.create_dataset(config, dataset.split('.')[0], f'{root_path}/{dataset}', wait_till_completion)
                 except Exception as e:
                         #todo: Handle the error
                         raise Exception(str(e))
 
-    def install_all_dataflows(self, config, root_path, dataflows=None):
+    def install_all_dataflows(self, config, root_path, dataflows=None, wait_till_completion=True):
         """
         Installs all dataflows from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -178,11 +187,11 @@ class SynapseManagementService:
                 dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    self.create_or_update_dataflow(config, f'{root_path}/{dataflow}', dataflow.split('.')[0])
+                    self.create_or_update_dataflow(config, f'{root_path}/{dataflow}', dataflow.split('.')[0], wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_notebooks(self, config, root_path, notebooks=None):
+    def install_all_notebooks(self, config, root_path, notebooks=None, wait_till_completion=True):
         """
         Installs all notebooks from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -195,11 +204,11 @@ class SynapseManagementService:
                 notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    self.create_notebook(f"{root_path}/{notebook}", config)
+                    self.create_notebook(f"{root_path}/{notebook}", config, wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_pipelines(self, config, root_path, pipelines=None):
+    def install_all_pipelines(self, config, root_path, pipelines=None, wait_till_completion=True):
         """
         Installs all pipelines from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -212,11 +221,11 @@ class SynapseManagementService:
                 pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    self.create_or_update_pipeline(config, f'{root_path}/{pipeline}', pipeline.split('.')[0])
+                    self.create_or_update_pipeline(config, f'{root_path}/{pipeline}', pipeline.split('.')[0], wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_linked_services(self, config, root_path, linked_services=None):
+    def install_all_linked_services(self, config, root_path, linked_services=None, wait_till_completion=True):
         """
         Installs all linked services from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -229,6 +238,6 @@ class SynapseManagementService:
                 linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
-                    self.create_linked_service(config, ls.split('.')[0], f'{root_path}/{ls}')
+                    self.create_linked_service(config, ls.split('.')[0], f'{root_path}/{ls}', wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
