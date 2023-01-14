@@ -142,7 +142,7 @@ class OEAInstaller():
 """
         # synapse_management_service.install_all_linked_services(self.synapse_workspace_name, f'{self.framework_path_relative}/linkedService')
 
-        synapse_management_service.install_all_datasets(self.synapse_workspace_name, f'{self.framework_path_relative}/dataset')
+        # synapse_management_service.install_all_datasets(self.synapse_workspace_name, f'{self.framework_path_relative}/dataset')
 
         synapse_management_service.install_all_notebooks(self.synapse_workspace_name, f'{self.framework_path_relative}/notebook')
 

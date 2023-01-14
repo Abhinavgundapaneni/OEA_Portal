@@ -48,8 +48,8 @@ class SynapseManagementService:
                 raise ValueError('Notebook format not supported.')
         # self.validate_notebook_json(notebook_dict)
         logger.info(f"Creating notebook: {notebook_name}")
-        poller = artifacts_client.notebook.create_or_update_notebook(notebook_name, notebook_dict)
-        return poller #AzureOperationPoller
+        poller = artifacts_client.notebook.begin_create_or_update_notebook(notebook_name, notebook_dict)
+        return poller.result() #AzureOperationPoller
 
     def create_linked_service(self, workspace_name, linked_service_name, file_path):
         """ Creates a linked service in the Synapse studio.
