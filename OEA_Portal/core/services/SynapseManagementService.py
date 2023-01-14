@@ -43,8 +43,8 @@ class SynapseManagementService:
                 notebook_name = notebook_dict['name']
             elif(notebook_filename.split('.')[-1] == 'ipynb'):
                 properties = json.loads(f.read())
-                notebook_dict = {"name": notebook_name, "properties": properties}
                 notebook_name = notebook_filename.split('/')[-1].split('.')[0]
+                notebook_dict = {"name": notebook_name, "properties": properties}
             else:
                 raise ValueError('Notebook format not supported.')
         # self.validate_notebook_json(notebook_dict)
