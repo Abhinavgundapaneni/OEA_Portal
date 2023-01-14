@@ -1,4 +1,4 @@
-from settings import BASE_DIR
+from OEA_Portal.settings import BASE_DIR
 from . import SynapseManagementService
 import urllib.request
 import zipfile
