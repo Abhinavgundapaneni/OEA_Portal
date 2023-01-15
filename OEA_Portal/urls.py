@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from OEA_Portal.core.views import InstallationFormView, InstallationLogsView, MetadataAddView, \
-            MetadataListView, HomeView
+            MetadataListView, HomeView, install_edfi_module
 from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
@@ -24,7 +24,8 @@ urlpatterns = [
     path('', csrf_exempt(HomeView.as_view()), name='home'),
     path('home', csrf_exempt(HomeView.as_view()), name='home'),
     path('logs', csrf_exempt(InstallationLogsView.as_view()), name='logs'),
-    path('install/', csrf_exempt(InstallationFormView.as_view()), name='install'),
+    path('install', csrf_exempt(InstallationFormView.as_view()), name='install'),
     path('metadata', csrf_exempt(MetadataAddView.as_view()), name='metadata'),
-    path('metadata_list', csrf_exempt(MetadataListView.as_view()), name='metadata_list')
+    path('metadata_list', csrf_exempt(MetadataListView.as_view()), name='metadata_list'),
+    path('install_edfi', csrf_exempt(install_edfi_module()), name='install_edfi')
 ]

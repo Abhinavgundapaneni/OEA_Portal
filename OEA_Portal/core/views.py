@@ -1,6 +1,4 @@
 import uuid
-from django.shortcuts import render
-from django.views.decorators.csrf import ensure_csrf_cookie
 from .forms import InstallationForm, MetadataFormSet
 from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
@@ -48,9 +46,10 @@ class InstallationFormView(FormView):
 
         request_id = uuid.uuid4()
         oea_installer = OEAInstaller(tenant_id, subscription_id, oea_suffix, location, include_groups)
-        # oea_installer.install(request_id)
-        #self.request.session['request_id'] = str(request_id)
-        oea_installer.install_edfi_module()
+        oea_installer.install(request_id)
+        self.request.session['tenant_id'] = tenant_id
+        self.request.session['subscription_id'] = subscription_id
+        self.request.session['oea_suffix'] = oea_suffix
         return redirect('logs')
 
 class MetadataAddView(TemplateView):
@@ -86,3 +85,10 @@ class MetadataListView(ListView):
 
     def get(self, *args, **kwargs):
         return self.render_to_response({'base_url':base_url})
+
+def install_edfi_module(request):
+    tenant_id = request.session['tenant_id']
+    subscription_id = request.session['subscription_id']
+    oea_suffix = request.session['oea_suffix']
+    oea_installer = OEAInstaller(tenant_id, subscription_id, oea_suffix)
+    oea_installer.install_edfi_module()
