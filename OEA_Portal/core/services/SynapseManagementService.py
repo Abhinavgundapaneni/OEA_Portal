@@ -38,7 +38,7 @@ class SynapseManagementService:
             Expects the dataflow configuration file in JSON format.
         """
         with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read(), config))
-        poller = self.azure_client.get_artifacts_client(config['workspace']).data_flow.begin_create_or_update_dataflow(dataflow_dict['name'], dataflow_dict)
+        poller = self.azure_client.get_artifacts_client(config['workspace']).data_flow.begin_create_or_update_data_flow(dataflow_dict['name'], dataflow_dict['properties'])
         if(wait_till_completion):
             return poller.result() #AzureOperationPoller
         else:
