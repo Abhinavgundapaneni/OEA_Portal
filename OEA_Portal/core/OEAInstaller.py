@@ -9,7 +9,7 @@ from .models import InstallationLogs
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.services.AzureResourceProvisionService import AzureResourceProvisionService
 from OEA_Portal.core.services.SynapseManagementService import SynapseManagementService
-from OEA_Portal.core.services.ModuleInstallationService import install_edfi_module
+from OEA_Portal.core.services.ModuleManagementService import install_edfi_module
 import logging
 class OEAInstaller():
     #todo: Add class description.

@@ -86,13 +86,13 @@ class ProfileView(TemplateView):
         tenant_id = self.request.session.get('tenant_id')
         subscription_id = self.request.session.get('subscription_id')
         profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
-        return self.render_to_response({'profile_form':profile_form})
+        return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
 
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')
         subscription_id = self.request.POST.get('subscription_id')
         profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
-        return self.render_to_response({'profile_form':profile_form})
+        return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
 
 
 class InstalledAppsView(TemplateView):
