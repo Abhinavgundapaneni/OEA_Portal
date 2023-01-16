@@ -5,8 +5,9 @@ from OEA_Portal.core.services.BlobService import get_blob_contents
 from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from django.views.generic.edit import FormView
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+from OEA_Portal.core.services.utils import get_tenant_and_subscription_values_from_config\
+        , update_tenant_and_subscription_values_from_config
+from OEA_Portal.core.services.ModuleManagementService import get_module_data_for_all_workspaces
 from django.views.generic.list import ListView
 from django.views.generic import TemplateView
 from .models import InstallationLogs, TableMetadata
@@ -19,8 +20,6 @@ class HomeView(TemplateView):
     template_name = 'core/homepage.html'
 
     def get(self, *args, **kwargs):
-        # self.request.session['tenant_id'] = TENANT_ID
-        # self.request.session['subscription_id'] = SUBSCRIPTION_ID
         global base_url
         if('base_url' in self.request.GET):
             base_url = self.request.GET['base_url']
@@ -85,17 +84,14 @@ class ProfileView(TemplateView):
     template_name = 'core/profile.html'
 
     def get(self, *args, **kwargs):
-        tenant_id = self.request.session.get('tenant_id')
-        subscription_id = self.request.session.get('subscription_id')
+        tenant_id, subscription_id = get_tenant_and_subscription_values_from_config()
         profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
         return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
 
-    @method_decorator(csrf_exempt)
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')
         subscription_id = self.request.POST.get('subscription_id')
-        self.request.session['tenant_id'] = tenant_id
-        self.request.session['subscription_id'] = subscription_id
+        update_tenant_and_subscription_values_from_config(tenant_id, subscription_id)
         profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
         return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
 
@@ -104,5 +100,5 @@ class InstalledAppsView(TemplateView):
     template_name = "core/installed_modules.html"
 
     def get(self, *args, **kwargs):
-        data = get_blob_contents(AzureClient(TENANT_ID, SUBSCRIPTION_ID), 'stoeaabhinav4', 'oea', 'config.json')
-        return self.render_to_response()
+        data = get_module_data_for_all_workspaces()
+        return self.render_to_response({'data':data})

@@ -2,12 +2,27 @@ from OEA_Portal.settings import BASE_DIR
 from . import SynapseManagementService
 import urllib.request
 import zipfile
+import os
+import json
 
-def download_and_extract_module(url, path=f"{BASE_DIR}/temp"):
+def download_and_extract_module(url, path=f'{BASE_DIR}/temp'.replace("\\", "/")):
     zip_path, _ = urllib.request.urlretrieve(url)
     with zipfile.ZipFile(zip_path, "r") as f:
         f.extractall(path)
     return path
+
+def get_module_data_for_all_workspaces():
+    """
+    Creates a Dictionary with information related to all the installed modules in all workspaces.
+    """
+    data_dict = {}
+    if(os.path.isdir(f'{BASE_DIR}/temp/workspaces'.replace("\\", "/"))):
+        workspaces = os.listdir(f'{BASE_DIR}/temp/workspaces'.replace("\\", "/"))
+        for workspace in workspaces:
+            with open(f'{BASE_DIR}/temp/workspaces/{workspace}/module_status.json'.replace("\\", "/")) as f:
+                workspace_data = json.load(f)
+            data_dict[workspace] = workspace_data
+    return data_dict
 
 def install_edfi_module(sms:SynapseManagementService, config, version='0.2'):
     """
