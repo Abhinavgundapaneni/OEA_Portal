@@ -91,6 +91,8 @@ class ProfileView(TemplateView):
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')
         subscription_id = self.request.POST.get('subscription_id')
+        self.request.session['tenant_id'] = tenant_id
+        self.request.session['subscription_id'] = subscription_id
         profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
         return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
 
