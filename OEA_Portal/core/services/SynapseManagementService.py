@@ -10,9 +10,8 @@ from OEA_Portal.settings import BASE_DIR
 logger = logging.getLogger('SynapseManagementService')
 
 class SynapseManagementService:
-    def __init__(self, azure_client:AzureClient, workspace_name, resource_group_name):
+    def __init__(self, azure_client:AzureClient, resource_group_name):
         self.azure_client = azure_client
-        self.workspace_name = workspace_name
         self.resource_group_name = resource_group_name
 
     def replace_strings(self, data, config):

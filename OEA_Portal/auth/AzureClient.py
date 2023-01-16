@@ -11,6 +11,7 @@ from azure.keyvault.secrets import SecretClient
 from azure.storage.filedatalake import DataLakeServiceClient
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.resource import ResourceManagementClient
+from azure.storage.blob import BlobClient
 from azure.mgmt.keyvault import KeyVaultManagementClient
 from azure.mgmt.synapse import SynapseManagementClient
 from azure.synapse.artifacts import ArtifactsClient
@@ -33,6 +34,7 @@ class AzureClient:
         self.graph_rbac_client = None
         self.secret_client = None
         self.authorization_client = None
+        self.blob_client = None
         self.storage_client = None
         self.artifacts_client = {}
         self.synapse_client = None
@@ -72,3 +74,7 @@ class AzureClient:
         if not synapse_workspace_name in self.artifacts_client:
             self.artifacts_client[synapse_workspace_name] = ArtifactsClient(self.credential, f"https://{synapse_workspace_name}.dev.azuresynapse.net")
         return self.artifacts_client[synapse_workspace_name]
+
+    def get_blob_client(self, storage_account_name, container_name, blob_name):
+        if not self.blob_client: self.blob_client = BlobClient(account_url=f"https://{storage_account_name}.dfs.core.windows.net", container_name=container_name, blob_name=blob_name, credential=self.credential)
+        return self.blob_client

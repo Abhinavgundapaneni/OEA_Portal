@@ -162,3 +162,6 @@ STATICFILES_DIRS = (
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Need to be removed later:
+TENANT_ID = '178ab4db-1ad5-49ad-86a7-06a29409af8a'
+SUBSCRIPTION_ID = '7b9a4896-4541-483f-bdc7-d8f4ec6be3ee'

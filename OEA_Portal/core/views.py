@@ -1,5 +1,9 @@
 import uuid
 from .forms import InstallationForm, MetadataFormSet
+from OEA_Portal.settings import TENANT_ID, SUBSCRIPTION_ID
+from OEA_Portal.core.services.BlobService import get_blob_contents
+from OEA_Portal.auth.AzureClient import AzureClient
+from django.http.response import HttpResponse
 from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
 from django.utils.decorators import method_decorator
@@ -92,3 +96,7 @@ def install_edfi_module(request):
     oea_suffix = request.session['oea_suffix']
     oea_installer = OEAInstaller(tenant_id, subscription_id, oea_suffix)
     oea_installer.install_edfi_module()
+
+def read_blob(request):
+    data = get_blob_contents(AzureClient(TENANT_ID, SUBSCRIPTION_ID))
+    return HttpResponse(data)
