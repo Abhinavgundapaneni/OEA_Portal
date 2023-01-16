@@ -5,6 +5,8 @@ from OEA_Portal.core.services.BlobService import get_blob_contents
 from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from django.views.generic.edit import FormView
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.list import ListView
 from django.views.generic import TemplateView
 from .models import InstallationLogs, TableMetadata
@@ -88,6 +90,7 @@ class ProfileView(TemplateView):
         profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
         return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
 
+    @method_decorator(csrf_exempt)
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')
         subscription_id = self.request.POST.get('subscription_id')
