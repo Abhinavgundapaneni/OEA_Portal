@@ -31,6 +31,10 @@ class InstallationForm(forms.Form):
     location = forms.CharField(max_length=15)
     include_groups = forms.BooleanField(required=False, label='Include Groups')
 
+class ProfileForm(forms.Form):
+    tenant_id = forms.CharField(max_length=50)
+    subscription_id = forms.CharField(max_length=50)
+
 class ColumnMetadata(forms.Form):
     column_name = forms.CharField(max_length=100)
     column_type = forms.ChoiceField(choices=TYPES)

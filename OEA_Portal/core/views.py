@@ -1,13 +1,11 @@
 import uuid
-from .forms import InstallationForm, MetadataFormSet
-from OEA_Portal.settings import TENANT_ID, SUBSCRIPTION_ID
+from .forms import InstallationForm, MetadataFormSet, ProfileForm
+#from OEA_Portal.settings import TENANT_ID, SUBSCRIPTION_ID
 from OEA_Portal.core.services.BlobService import get_blob_contents
 from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 from .models import InstallationLogs, TableMetadata
 from django.shortcuts import redirect
@@ -19,6 +17,8 @@ class HomeView(TemplateView):
     template_name = 'core/homepage.html'
 
     def get(self, *args, **kwargs):
+        # self.request.session['tenant_id'] = TENANT_ID
+        # self.request.session['subscription_id'] = SUBSCRIPTION_ID
         global base_url
         if('base_url' in self.request.GET):
             base_url = self.request.GET['base_url']
@@ -42,8 +42,8 @@ class InstallationFormView(FormView):
         return context
 
     def form_valid(self, form):
-        tenant_id = form.cleaned_data.get('tenant_id')
-        subscription_id = form.cleaned_data.get('subscription_id')
+        tenant_id = self.request.session['tenant_id']
+        subscription_id = self.request.session['subscription_id']
         include_groups = form.cleaned_data.get('include_groups')
         oea_suffix = form.cleaned_data.get('oea_suffix')
         location = form.cleaned_data.get('location')
@@ -51,9 +51,6 @@ class InstallationFormView(FormView):
         request_id = uuid.uuid4()
         oea_installer = OEAInstaller(tenant_id, subscription_id, oea_suffix, location, include_groups)
         oea_installer.install(request_id)
-        self.request.session['tenant_id'] = tenant_id
-        self.request.session['subscription_id'] = subscription_id
-        self.request.session['oea_suffix'] = oea_suffix
         return redirect('logs')
 
 class MetadataAddView(TemplateView):
@@ -63,7 +60,6 @@ class MetadataAddView(TemplateView):
         formset = MetadataFormSet()
         return self.render_to_response({'metadata_formset': formset, 'base_url':base_url})
 
-    @method_decorator(csrf_exempt)
     def post(self, *args, **kwargs):
         formset = MetadataFormSet(data=self.request.POST)
         if formset.is_valid():
@@ -83,20 +79,25 @@ class MetadataAddView(TemplateView):
 
         return self.render_to_response({'metadata_formset': formset})
 
-class MetadataListView(ListView):
-    model = TableMetadata
-    template_name = 'core/metadata_list.html'
+class ProfileView(TemplateView):
+    template_name = 'core/profile.html'
 
     def get(self, *args, **kwargs):
-        return self.render_to_response({'base_url':base_url})
+        tenant_id = self.request.session.get('tenant_id')
+        subscription_id = self.request.session.get('subscription_id')
+        profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
+        return self.render_to_response({'profile_form':profile_form})
 
-def install_edfi_module(request):
-    tenant_id = request.session['tenant_id']
-    subscription_id = request.session['subscription_id']
-    oea_suffix = request.session['oea_suffix']
-    oea_installer = OEAInstaller(tenant_id, subscription_id, oea_suffix)
-    oea_installer.install_edfi_module()
+    def post(self, *args, **kwargs):
+        tenant_id = self.request.POST.get('tenant_id')
+        subscription_id = self.request.POST.get('subscription_id')
+        profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
+        return self.render_to_response({'profile_form':profile_form})
 
-def read_blob(request):
-    data = get_blob_contents(AzureClient(TENANT_ID, SUBSCRIPTION_ID), 'stoeaabhinav4', 'oea', 'config.json')
-    return HttpResponse(data)
+
+class InstalledAppsView(TemplateView):
+    template_name = "core/installed_modules.html"
+
+    def get(self, *args, **kwargs):
+        data = get_blob_contents(AzureClient(TENANT_ID, SUBSCRIPTION_ID), 'stoeaabhinav4', 'oea', 'config.json')
+        return self.render_to_response()

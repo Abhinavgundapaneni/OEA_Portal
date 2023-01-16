@@ -10,6 +10,7 @@ from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.storage.filedatalake import DataLakeServiceClient
 from azure.mgmt.authorization import AuthorizationManagementClient
+from azure.mgmt.subscription import SubscriptionClient
 from azure.mgmt.resource import ResourceManagementClient
 from azure.storage.blob import BlobClient
 from azure.mgmt.keyvault import KeyVaultManagementClient
@@ -78,3 +79,7 @@ class AzureClient:
     def get_blob_client(self, storage_account_name, container_name, blob_name):
         if not self.blob_client: self.blob_client = BlobClient(account_url=f"https://{storage_account_name}.dfs.core.windows.net", container_name=container_name, blob_name=blob_name, credential=self.credential)
         return self.blob_client
+
+    def get_subscription_client(self):
+        if not self.subscription_client: self.subscription_client = SubscriptionClient(self.credential)
+        return self.subscription_client
