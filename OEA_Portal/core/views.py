@@ -98,5 +98,5 @@ def install_edfi_module(request):
     oea_installer.install_edfi_module()
 
 def read_blob(request):
-    data = get_blob_contents(AzureClient(TENANT_ID, SUBSCRIPTION_ID))
+    data = get_blob_contents(AzureClient(TENANT_ID, SUBSCRIPTION_ID), 'stoeaabhinav4', 'oea', 'config.json')
     return HttpResponse(data)
