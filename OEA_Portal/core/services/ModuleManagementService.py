@@ -6,10 +6,16 @@ import os
 import json
 
 def download_and_extract_module(url, path=f'{BASE_DIR}/temp'.replace("\\", "/")):
-    zip_path, _ = urllib.request.urlretrieve(url)
-    with zipfile.ZipFile(zip_path, "r") as f:
-        f.extractall(path)
-    return path
+    try:
+        zip_path, _ = urllib.request.urlretrieve(url)
+        with zipfile.ZipFile(zip_path, "r") as f:
+            f.extractall(path)
+        return path
+    except:
+        raise Exception(f"Unable to Download or Extract ZIP file from URL - {url}")
+
+def delete_module_from_workspace(workspace, module):
+    pass
 
 def get_module_data_for_all_workspaces():
     """
@@ -28,13 +34,10 @@ def install_edfi_module(sms:SynapseManagementService, config, version='0.2'):
     """
     Installs the Ed-Fi Module on your Workspace. Default version : 0.2
     """
-    module_release_url = f'https://github.com/microsoft/OpenEduAnalytics/releases/download/module_edfi_v{version}/module_edfi_v{version}.zip'
-    try:
-        path = download_and_extract_module(module_release_url)
-    except:
-        raise Exception(f'Unable to download and extract Module from - {module_release_url}. Check if the Version you are trying to install is valid.')
-
-    module_root_path = f'{path}/module_edfi_v{version}'
+    module_root_path = f'{BASE_DIR}/temp/module_edfi_v{version}'.replace('\\','/')
+    if(os.path.isdir(module_root_path) is False):
+        module_release_url = f'https://github.com/microsoft/OpenEduAnalytics/releases/download/module_edfi_v{version}/module_edfi_v{version}.zip'
+        download_and_extract_module(module_release_url)
     try:
         sms.install_all_datasets(config, f'{module_root_path}/dataset', wait_till_completion=False)
         sms.install_all_dataflows(config, f'{module_root_path}/dataflow', wait_till_completion=False)
@@ -43,3 +46,10 @@ def install_edfi_module(sms:SynapseManagementService, config, version='0.2'):
         sms.install_all_pipelines(config, f'{module_root_path}/pipeline', pipelines=pipelines)
     except:
         raise Exception('Error Installing Ed-Fi Module.')
+
+def uninstall_edfi_module(sms:SynapseManagementService, workspace, version='0.2'):
+    module_root_path = f'{BASE_DIR}/temp/module_edfi_v{version}'.replace('\\','/')
+    if(os.path.isdir(module_root_path) is False):
+        module_release_url = f'https://github.com/microsoft/OpenEduAnalytics/releases/download/module_edfi_v{version}/module_edfi_v{version}.zip'
+        download_and_extract_module(module_release_url)
+

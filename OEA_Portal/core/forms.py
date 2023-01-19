@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import HiddenInput, formset_factory
+from django.forms import formset_factory
 
 CHOICES =(
     ("hash","hash"),
@@ -25,9 +25,11 @@ CONSTRAINTS = (
 )
 
 class InstallationForm(forms.Form):
-    tenant_id = forms.CharField(max_length=50)
-    subscription_id = forms.CharField(max_length=50)
+    def __init__(self, version_choices, *args, **kwargs):
+        super(InstallationForm, self).__init__(*args, **kwargs)
+        self.fields['oea_version'].choices = version_choices
     oea_suffix = forms.CharField(max_length=10)
+    oea_version = forms.ChoiceField()
     location = forms.CharField(max_length=15)
     include_groups = forms.BooleanField(required=False, label='Include Groups')
 

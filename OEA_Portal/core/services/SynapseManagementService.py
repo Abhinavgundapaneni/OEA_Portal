@@ -155,6 +155,66 @@ class SynapseManagementService:
         if 'bigDataPool' in nb_json['properties']:
             nb_json['properties'].pop('bigDataPool', None) #Remove bigDataPool if it's there
 
+    def delete_dataset(self, workspace_name, dataset, wait_till_completion):
+        """
+        Deletes given dataset from Synapse Workspace
+        """
+        try:
+            poller = self.azure_client.get_artifacts_client(workspace_name).dataset.begin_delete_dataset(dataset)
+        except:
+            raise Exception(f'Error while deleting dataset - {dataset}')
+        if(wait_till_completion):
+            return poller.result()
+        return poller
+
+    def delete_pipeline(self, workspace_name, pipeline, wait_till_completion):
+        """
+        Deletes given pipeline from Synapse Workspace
+        """
+        try:
+            poller = self.azure_client.get_artifacts_client(workspace_name).pipeline.begin_delete_pipeline(pipeline)
+        except:
+            raise Exception(f'Error while deleting pipeline - {pipeline}')
+        if(wait_till_completion):
+            return poller.result()
+        return poller
+
+    def delete_linked_service(self, workspace_name, linked_service, wait_till_completion):
+        """
+        Deletes given linked service from Synapse Workspace
+        """
+        try:
+            poller = self.azure_client.get_artifacts_client(workspace_name).linked_service.begin_delete_linked_service(linked_service)
+        except:
+            raise Exception(f'Error while deleting linked service - {linked_service}')
+        if(wait_till_completion):
+            return poller.result()
+        return poller
+
+    def delete_notebook(self, workspace_name, notebook, wait_till_completion):
+        """
+        Deletes given notebook from Synapse Workspace
+        """
+        try:
+            poller = self.azure_client.get_artifacts_client(workspace_name).notebook.begin_delete_notebook(notebook)
+        except:
+            raise Exception(f'Error while deleting notebook - {notebook}')
+        if(wait_till_completion):
+            return poller.result()
+        return poller
+
+    def delete_dataflow(self, workspace_name, dataflow, wait_till_completion):
+        """
+        Deletes given dataflow from Synapse Workspace
+        """
+        try:
+            poller = self.azure_client.get_artifacts_client(workspace_name).data_flow.begin_delete_data_flow(dataflow)
+        except:
+            raise Exception(f'Error while deleting dataflow - {dataflow}')
+        if(wait_till_completion):
+            return poller.result()
+        return poller
+
     def install_all_datasets(self, config, root_path, datasets=None, wait_till_completion=True):
         """
         Installs all datasets from the given path on the Synapse workspace.
@@ -240,3 +300,9 @@ class SynapseManagementService:
                     self.create_linked_service(config, ls.split('.')[0], f'{root_path}/{ls}', wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
+
+    def delete_all_datasets(self, workspace_name, root_path, datasets=None, wait_till_completion=False):
+        if(datasets is None):
+            datasets = os.listdir(root_path)
+        for dataset in datasets:
+            self.delete_dataset()

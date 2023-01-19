@@ -5,9 +5,10 @@ from OEA_Portal.core.services.BlobService import get_blob_contents
 from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from django.views.generic.edit import FormView
-from OEA_Portal.core.services.utils import get_tenant_and_subscription_values_from_config\
-        , update_tenant_and_subscription_values_from_config
-from OEA_Portal.core.services.ModuleManagementService import get_module_data_for_all_workspaces
+from OEA_Portal.core.services.utils import get_config_data\
+        , update_config_database
+from OEA_Portal.core.services.ModuleManagementService import get_module_data_for_all_workspaces\
+    , delete_module_from_workspace
 from django.views.generic.list import ListView
 from django.views.generic import TemplateView
 from .models import InstallationLogs, TableMetadata
@@ -25,34 +26,33 @@ class HomeView(TemplateView):
             base_url = self.request.GET['base_url']
         return self.render_to_response({'base_url':base_url})
 
-class InstallationLogsView(ListView):
-    template_name = 'core/installation_logs.html'
-    model = InstallationLogs
-
-    def get_queryset(self):
-        request_id = self.request.session['request_id']
-        return InstallationLogs.objects.filter(request_id = request_id)
-
-class InstallationFormView(FormView):
-    form_class = InstallationForm
+class InstallationFormView(TemplateView):
     template_name = 'core/installation_form.html'
+    config = get_config_data()
 
     def get_context_data(self, **kwargs):
         context = super(InstallationFormView, self).get_context_data(**kwargs)
         context['base_url'] = base_url
         return context
 
-    def form_valid(self, form):
-        tenant_id = self.request.session['tenant_id']
-        subscription_id = self.request.session['subscription_id']
-        include_groups = form.cleaned_data.get('include_groups')
-        oea_suffix = form.cleaned_data.get('oea_suffix')
-        location = form.cleaned_data.get('location')
+    def get(self, *args, **kwargs):
+        version_choices = [(x,x) for x in self.config['OEA_Versions']]
+        form = InstallationForm(version_choices)
+        return self.render_to_response({'form':form})
+
+    def post(self, *args, **kwargs):
+        # config = get_config_data()
+        tenant_id = self.config['TenantId']
+        subscription_id = self.config['SubscriptionId']
+        include_groups = self.request.POST.get('include_groups')
+        oea_version = self.request.POST.get('oea_version')
+        oea_suffix = self.request.POST.get('oea_suffix')
+        location = self.request.POST.get('location')
 
         request_id = uuid.uuid4()
-        oea_installer = OEAInstaller(tenant_id, subscription_id, oea_suffix, location, include_groups)
+        oea_installer = OEAInstaller(tenant_id, subscription_id, oea_suffix,oea_version, location, include_groups)
         oea_installer.install(request_id)
-        return redirect('logs')
+        return redirect('home')
 
 class MetadataAddView(TemplateView):
     template_name = "core/metadata_form.html"
@@ -83,22 +83,39 @@ class MetadataAddView(TemplateView):
 class ProfileView(TemplateView):
     template_name = 'core/profile.html'
 
+    def get_context_data(self, **kwargs):
+        context = super(ProfileView, self).get_context_data(**kwargs)
+        context['base_url'] = base_url
+        return context
+
     def get(self, *args, **kwargs):
-        tenant_id, subscription_id = get_tenant_and_subscription_values_from_config()
+        config = get_config_data()
+        tenant_id = config['TenantId']
+        subscription_id = config['SubscriptionId']
         profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
         return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
 
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')
         subscription_id = self.request.POST.get('subscription_id')
-        update_tenant_and_subscription_values_from_config(tenant_id, subscription_id)
+        update_config_database({'TenantId':tenant_id, 'SubscriptionId':subscription_id})
         profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
         return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
 
-
-class InstalledAppsView(TemplateView):
+class InstalledModulesView(TemplateView):
     template_name = "core/installed_modules.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(InstalledModulesView, self).get_context_data(**kwargs)
+        context['base_url'] = base_url
+        return context
 
     def get(self, *args, **kwargs):
         data = get_module_data_for_all_workspaces()
         return self.render_to_response({'data':data})
+
+def delete_module(request):
+    workspace_name = request.GET['workspace']
+    module_name = request.GET['module']
+    delete_module_from_workspace(workspace_name, module_name)
+    return redirect('installed_modules')

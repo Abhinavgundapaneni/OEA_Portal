@@ -11,30 +11,26 @@ from azure.mgmt.synapse.models import DataLakeStorageAccountDetails, ManagedIden
 logger = logging.getLogger('AzureResourceProvisionService')
 
 class AzureResourceProvisionService:
-    # todo: Add class description.
+    """
+    This class contains all the necessary capabilities to provision the required
+    assets in the Azure Portal for the OEA framework to be running seamlessly.
+    """
     def __init__(self, azure_client:AzureClient):
         self.azure_client = azure_client
-        self.resource_group = None
-        self.resource_group_name = None
-        self.storage_account_name = None
 
     def delete_resource_group(self, name):
         """ Deletes the given resource group from the subscription. """
         self.azure_client.get_resource_client().resource_groups.begin_delete(name)
-        self.resource_group_name = None
-        self.resource_group = None
 
     def create_resource_group(self, resource_group_name, tags=None):
         """ Creates an empty resource group in the Azure Subscription """
         if not tags: tags = {}
         result = self.azure_client.get_resource_client().resource_groups.create_or_update(resource_group_name, {'location': self.azure_client.location, 'tags': tags})
-        self.resource_group = result
-        self.azure_client.tags = tags
-        self.resource_group_name = result.name
 
-    def create_key_vault(self, key_vault_name, access_policies):
+
+    def create_key_vault(self, key_vault_name, resource_group_name, access_policies):
         """ Creates a keyvault with the given name and access policies, waits for the creation to finish an returns the keyvault object """
-        poller = self.azure_client.get_key_vault_client().vaults.begin_create_or_update(self.resource_group_name, key_vault_name,
+        poller = self.azure_client.get_key_vault_client().vaults.begin_create_or_update(resource_group_name, key_vault_name,
             {
                 'location': self.azure_client.location,
                 'properties': {
@@ -58,11 +54,11 @@ class AzureResourceProvisionService:
             resources += f"{resource.name},{resource.type},{str(resource.created_time)}{str(resource.changed_time)}\n"
         return resources
 
-    def create_synapse_workspace(self, synapse_workspace_name, storage_account_name):
+    def create_synapse_workspace(self, synapse_workspace_name, resource_group_name, storage_account_name):
         """ Creates a Synapse workspace, waits for the creation to finish and returns the synapse workspace object """
         default_data_lake_storage = DataLakeStorageAccountDetails(account_url=f"https://{storage_account_name}.dfs.core.windows.net", filesystem="oea")
 
-        poller = self.azure_client.get_synapse_client().workspaces.begin_create_or_update(self.resource_group_name, synapse_workspace_name,
+        poller = self.azure_client.get_synapse_client().workspaces.begin_create_or_update(resource_group_name, synapse_workspace_name,
             {
                 "location" : self.azure_client.location,
                 "tags" : self.azure_client.tags,
@@ -74,10 +70,10 @@ class AzureResourceProvisionService:
         )
         return poller.result()
 
-    def create_storage_account(self, storage_account_name):
+    def create_storage_account(self, storage_account_name, resource_group_name):
         """ Create a storage account, waits for the creation to complete and returns the storage account object """
         storage_client = self.azure_client.get_storage_client()
-        poller = storage_client.storage_accounts.begin_create(self.resource_group_name, storage_account_name,
+        poller = storage_client.storage_accounts.begin_create(resource_group_name, storage_account_name,
             {
                 "location" : self.azure_client.location,
                 "tags" : self.azure_client.tags,
@@ -89,19 +85,18 @@ class AzureResourceProvisionService:
             }
         )
         account_result = poller.result()
-        self.storage_account_name = storage_account_name
         return account_result
 
-    def create_containers_and_directories(self, storage_account_name, container_names, directory_list):
+    def create_containers_and_directories(self, storage_account_name, resource_group_name, container_names, directory_list):
         """ Creates the given containers and directories in a given storage account """
         storage_client = self.azure_client.get_storage_client()
-        keys = storage_client.storage_accounts.list_keys(self.resource_group_name, storage_account_name)
+        keys = storage_client.storage_accounts.list_keys(resource_group_name, storage_account_name)
         conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={storage_account_name};AccountKey={keys.keys[0].value}"
         for name in container_names:
-            container = storage_client.blob_containers.create(self.resource_group_name, storage_account_name, name, {})
+            container = storage_client.blob_containers.create(resource_group_name, storage_account_name, name, {})
             for directory_path in ['/'.join(x.split('/')[1:]) for x in directory_list if x.split('/')[0] == name]:
                 logger.info(directory_path)
-                self.azure_client.get_datalake_client(self.storage_account_name, keys.keys[0].value).get_file_system_client(name).create_directory(directory_path)
+                self.azure_client.get_datalake_client(storage_account_name, keys.keys[0].value).get_file_system_client(name).create_directory(directory_path)
 
     def get_role(self, role_name, resource_id):
         auth_client = AuthorizationManagementClient(self.azure_client.credential, self.azure_client.subscription_id)

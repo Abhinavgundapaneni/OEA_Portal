@@ -1,66 +1,28 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
+{{ data|json_script:"mydata" }}
+<script src="{{base_url}}/static/js/initialise.js"></script>
 
-    <script>
-        window.addEventListener("load", function(){
-            function populate_select_fields() {
-                workspace_select = document.getElementById("workspace_select");
-                for(var workspace in data) {
-                    var option = document.createElement("option");
-                    option.setAttribute('value', workspace);
-
-                    var optionText = document.createTextNode(workspace);
-                    option.appendChild(optionText);
-
-                    workspace_select.appendChild(option);
-                }
-            }
-            var data_str = '{{data|escapejs}}'
-            data_str = data_str.replace(/&quot;/ig,'"');
-            data_str = data_str.replaceAll("'", "\"")
-            var data = JSON.parse(data_str);
-            var table = document.getElementById("table")
-            var button = document.getElementById("button")
-            populate_select_fields()
-            button.addEventListener("click", e => {
-                while(table.rows.length > 0) {
-                    table.deleteRow(0);
-                  }
-                var workspace_name  = workspace_select.value
-                var workspace_modules = data[workspace_name]['Installed_Modules']
-                for(var m in workspace_modules) {
-                    tr = table.insertRow(-1);
-                    var moduleName = tr.insertCell(-1);
-                    moduleName.innerHTML = workspace_modules[m]['Name']
-                    var moduleVersion = tr.insertCell(-1);
-                    moduleVersion.innerHTML = workspace_modules[m]['Version'];
-                    var lastUpdatedTime = tr.insertCell(-1);
-                    lastUpdatedTime.innerHTML = workspace_modules[m]['LastUpdatedTime'];
-                }
-             })
-        })
-
-    </script>
-
-  <div>
+  <div align="center">
 
     <label for="workspace_select">Workspace Name</label>
     <select name="workspace_select" id="workspace_select">
         <option value="">None</option>
     </select>
-    <button type="submit" id="button">Select</button>
+    <button type="submit" id="button" class="btn btn-primary">Select</button>
 
   </div>
 
   <div>
-    <table class="table" id="table">
+    <table class="table" id="table" align="center" style="width:80%">
         <tr>
             <th>Module Name</th>
             <th>Version</th>
             <th>Last Updated Time</th>
             <th>Delete</th>
         </tr>
+        <tbody class="tbody" id="tbody"></tbody>
 
     </table>
 

@@ -5,7 +5,6 @@ import uuid
 import zipfile
 import urllib.request
 import secrets
-from .models import InstallationLogs
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.services.AzureResourceProvisionService import AzureResourceProvisionService
 from OEA_Portal.core.services.SynapseManagementService import SynapseManagementService
@@ -13,13 +12,13 @@ from OEA_Portal.core.services.ModuleManagementService import install_edfi_module
 import logging
 class OEAInstaller():
     #todo: Add class description.
-    def __init__(self, tenant_id, subscription_id, oea_suffix, location='eastus', tags=None, include_groups=False):
+    def __init__(self, tenant_id, subscription_id, oea_suffix, oea_version='0.7', location='eastus', tags=None, include_groups=False):
         self.tenant_id = tenant_id
         self.subscription_id = subscription_id
         self.location = location
-        self.tags = tags
+        self.tags = {'OEA_Version':oea_version}
         self.include_groups = include_groups
-        self.framework_path_relative = f"{BASE_DIR}/temp/OEA_v0.7/framework/synapse".replace('\\', '/')
+        self.framework_path_relative = f"{BASE_DIR}/temp/OEA_v{oea_version}/framework/synapse".replace('\\', '/')
         self.framework_zip_url = "https://github.com/microsoft/OpenEduAnalytics/releases/download/v0.7/OEA_v0.7.zip"
         #todo: Find way to get signed-in user id using python sdk.
         self.user_object_id = '34b26f30-cbfc-47ec-9131-27fef4433705'
@@ -37,10 +36,7 @@ class OEAInstaller():
         self.ds_group_name = None
         self.eds_group_name = None
         self.de_group_name = None
-        # self.celery_app = Celery('OEAInstaller', broker='amqp://localhost')
         self.logger = logging.getLogger('OEAInstaller')
-    def log_entry_to_db(request_id, action, message):
-        InstallationLogs.objects.create(request_id=request_id, action=action, message=message)
 
     def verify_permissions(self, azure_client, resouce_provision_service):
         """ Check if user has "Owner" Permission on the subscription, fail if not """
@@ -54,8 +50,8 @@ class OEAInstaller():
         """ Returns the Resource Id of the given container """
         return f"/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/providers/Microsoft.Storage/storageAccounts/{self.storage_account_name}/blobServices/default/containers/{container}"
 
-    def create_synapse_architecture(self, azure_resource_provision_service, synapse_management_service):
-        self.synapse_workspace_object = azure_resource_provision_service.create_synapse_workspace(self.synapse_workspace_name, self.storage_account_name)
+    def create_synapse_architecture(self, azure_resource_provision_service:AzureResourceProvisionService, synapse_management_service:SynapseManagementService):
+        self.synapse_workspace_object = azure_resource_provision_service.create_synapse_workspace(self.synapse_workspace_name, self.resource_group_name, self.storage_account_name)
         azure_resource_provision_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_object.id, self.synapse_workspace_object.identity.principal_id)
         synapse_management_service.add_firewall_rule_for_synapse('allowAll', '0.0.0.0', '255.255.255.255', self.synapse_workspace_name)
         synapse_management_service.create_spark_pool(self.synapse_workspace_name, "spark3p2sm",
@@ -109,7 +105,7 @@ class OEAInstaller():
         self.download_and_extract_framework()
         azure_client = AzureClient(self.tenant_id, self.subscription_id, location=self.location, default_tags=self.tags)
         azure_resource_provision_service = AzureResourceProvisionService(azure_client)
-        synapse_management_service = SynapseManagementService(azure_client, self.synapse_workspace_name, self.resource_group_name)
+        synapse_management_service = SynapseManagementService(azure_client, self.resource_group_name)
         resource_config = {}
         resource_config['keyvault'] = self.keyvault_name
         resource_config['storage_account'] = self.storage_account_name
@@ -119,8 +115,8 @@ class OEAInstaller():
 
         azure_resource_provision_service.create_resource_group(self.resource_group_name)
 
-        self.storage_account_object = azure_resource_provision_service.create_storage_account(self.storage_account_name)
-        azure_resource_provision_service.create_containers_and_directories(self.storage_account_name, self.containers, self.dirs)
+        self.storage_account_object = azure_resource_provision_service.create_storage_account(self.storage_account_name, self.resource_group_name)
+        azure_resource_provision_service.create_containers_and_directories(self.storage_account_name, self.resource_group_name, self.containers, self.dirs)
 
         self.create_synapse_architecture(azure_resource_provision_service, synapse_management_service)
         access_policy_for_synapse = { 'tenant_id': self.tenant_id, 'object_id': self.synapse_workspace_object.identity.principal_id,
@@ -130,7 +126,7 @@ class OEAInstaller():
                                     'permissions': { 'keys': ['all'], 'secrets': ['all'] }
                                 }
 
-        azure_resource_provision_service.create_key_vault(self.keyvault_name, [access_policy_for_synapse, access_policy_for_user])
+        azure_resource_provision_service.create_key_vault(self.keyvault_name, self.resource_group_name, [access_policy_for_synapse, access_policy_for_user])
         azure_resource_provision_service.create_secret_in_keyvault(self.keyvault_name, 'oeaSalt', b64encode(secrets.token_bytes(16)).decode())
         #todo: Migrate this step to use Python SDK.
         # os.system(f"az monitor app-insights component create --app {self.appinsights_name} --resource-group {self.resource_group_name} --location {self.location} --tags {self.tags} -o none")
@@ -149,13 +145,3 @@ class OEAInstaller():
         synapse_management_service.install_all_dataflows(resource_config, f'{self.framework_path_relative}/dataflow', wait_till_completion=False)
 
         synapse_management_service.install_all_pipelines(resource_config, f'{self.framework_path_relative}/pipeline')
-
-    def install_edfi_module(self):
-        azure_client = AzureClient(self.tenant_id, self.subscription_id, location=self.location, default_tags=self.tags)
-        synapse_management_service = SynapseManagementService(azure_client, self.synapse_workspace_name, self.resource_group_name)
-        resource_config = {}
-        resource_config['keyvault'] = self.keyvault_name
-        resource_config['storage_account'] = self.storage_account_name
-        resource_config['resource_group'] = self.resource_group_name
-        resource_config['workspace'] = self.synapse_workspace_name
-        install_edfi_module(synapse_management_service, resource_config, '0.2')
