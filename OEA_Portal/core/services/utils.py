@@ -1,6 +1,6 @@
 import json
 import os
-from OEA_Portal.settings import BASE_DIR, CONFIG_DATABASE
+from OEA_Portal.settings import CONFIG_DATABASE, WORKSPACE_DB_ROOT_PATH
 from OEA_Portal.auth.AzureClient import AzureClient
 
 def get_config_data():
@@ -28,11 +28,11 @@ def get_all_workspaces_in_subscription(azure_client:AzureClient):
     """
     return azure_client.get_synapse_client().workspaces.list()
 
-def get_all_workspaces_with_oea_installed(azure_client:AzureClient):
-    """
-    Returns the list of all workspaces with OEA installed in a given subscription.
-    """
-    azure_client.get_datalake_client().list_file_systems(name_starts_with='oea')
+def is_oea_installed_in_workspace(azure_client:AzureClient, workspace_name, resource_group_name):
+    linked_storage_account = azure_client.get_synapse_client().workspaces.get(resource_group_name=resource_group_name, workspace_name=workspace_name).default_data_lake_storage
+    keys = azure_client.get_storage_client().storage_accounts.list_keys(resource_group_name, linked_storage_account)
+    blobs = azure_client.get_datalake_client(linked_storage_account, keys.keys[0].value).list_file_systems(name_starts_with=f'{WORKSPACE_DB_ROOT_PATH}/{workspace_name}')
+    return False if (blobs is None or len(blobs) == 0) else True
 
 def get_all_storage_accounts_in_subscription(azure_client:AzureClient):
     """

@@ -6,7 +6,7 @@ from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from django.views.generic.edit import FormView
 from OEA_Portal.core.services.utils import get_config_data\
-        , update_config_database
+        , update_config_database, get_all_storage_accounts_in_subscription, get_all_workspaces_in_subscription, is_oea_installed_in_workspace
 from OEA_Portal.core.services.ModuleManagementService import get_module_data_for_all_workspaces\
     , delete_module_from_workspace
 from django.views.generic.list import ListView
@@ -41,7 +41,6 @@ class InstallationFormView(TemplateView):
         return self.render_to_response({'form':form})
 
     def post(self, *args, **kwargs):
-        # config = get_config_data()
         tenant_id = self.config['TenantId']
         subscription_id = self.config['SubscriptionId']
         include_groups = self.request.POST.get('include_groups')
@@ -115,7 +114,11 @@ class InstalledModulesView(TemplateView):
         return self.render_to_response({'data':data})
 
 def delete_module(request):
-    workspace_name = request.GET['workspace']
-    module_name = request.GET['module']
-    delete_module_from_workspace(workspace_name, module_name)
-    return redirect('installed_modules')
+    config = get_config_data()
+    tenant_id = config['TenantId']
+    subscription_id = config['SubscriptionId']
+    azure_client = AzureClient(tenant_id, subscription_id)
+    print(get_all_workspaces_in_subscription(azure_client))
+    print(get_all_storage_accounts_in_subscription(azure_client))
+    print(is_oea_installed_in_workspace('syn-oea-abhinav4', 'rg-oea-abhinav4'))
+    return HttpResponse('hello')
