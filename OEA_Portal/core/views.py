@@ -118,7 +118,7 @@ def delete_module(request):
     tenant_id = config['TenantId']
     subscription_id = config['SubscriptionId']
     azure_client = AzureClient(tenant_id, subscription_id)
-    print([i.name for i in get_all_workspaces_in_subscription(azure_client)])
-    print([i.name for i in get_all_storage_accounts_in_subscription(azure_client)])
+    print(get_all_workspaces_in_subscription(azure_client))
+    print(get_all_storage_accounts_in_subscription(azure_client))
     print(is_oea_installed_in_workspace(azure_client, 'syn-oea-abhinav4', 'rg-oea-abhinav4'))
     return HttpResponse('hello')
