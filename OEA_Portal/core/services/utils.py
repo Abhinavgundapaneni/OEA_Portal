@@ -26,20 +26,21 @@ def get_all_workspaces_in_subscription(azure_client:AzureClient):
     """
     Returns the list of all workspaces in a given subscription.
     """
-    return azure_client.get_synapse_client().workspaces.list()
+    return [x.name for x in azure_client.get_synapse_client().workspaces.list()]
 
 def is_oea_installed_in_workspace(azure_client:AzureClient, workspace_name, resource_group_name):
-    linked_storage_account = azure_client.get_synapse_client().workspaces.get(resource_group_name=resource_group_name, workspace_name=workspace_name).default_data_lake_storage.account_url
+    linked_storage_account = azure_client.get_synapse_client().workspaces.get(resource_group_name=resource_group_name, workspace_name=workspace_name).default_data_lake_storage.account_url.replace('.dfs.core.windows.net', '').replace('https://', '')
     print(linked_storage_account)
     keys = azure_client.get_storage_client().storage_accounts.list_keys(resource_group_name, linked_storage_account)
-    blobs = azure_client.get_datalake_client(linked_storage_account, keys.keys[0].value).list_file_systems(name_starts_with=f'{WORKSPACE_DB_ROOT_PATH}/{workspace_name}')
-    return False if (blobs is None or len(blobs) == 0) else True
+    blobs = azure_client.get_datalake_client(linked_storage_account, keys.keys[0].value).list_file_systems(name_starts_with='oea')
+    blob_names = [i.name for i in blobs]
+    return False if (blob_names is None or len(blob_names) == 0) else True
 
 def get_all_storage_accounts_in_subscription(azure_client:AzureClient):
     """
     Returns the list of all storage accounts in a given subscription.
     """
-    return azure_client.get_storage_client().storage_accounts.list()
+    return [x.name for x in azure_client.get_storage_client().storage_accounts.list()]
 
 
 
