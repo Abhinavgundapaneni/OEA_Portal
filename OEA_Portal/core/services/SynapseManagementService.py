@@ -291,7 +291,6 @@ class SynapseManagementService:
         pass the linked services parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-
         if(os.path.isdir(f'{root_path}/') is True):
             if(linked_services is None):
                 linked_services = os.listdir(f'{root_path}/')
@@ -301,8 +300,82 @@ class SynapseManagementService:
                 except Exception as e:
                     raise Exception(str(e))
 
-    def delete_all_datasets(self, workspace_name, root_path, datasets=None, wait_till_completion=False):
+    def delete_all_datasets(self, workspace_name, root_path=None, datasets=None, wait_till_completion=False):
+        """
+        Deletes all datasets from the given path on the Synapse workspace if the root_path is passed.
+        If order of deletion is important or you want to delete only selected assets,
+        pass the datasets parameter with the required assets in the correct order.
+        """
+        if(root_path is None and datasets is None):
+            raise AttributeError("Arguments root_path and datasets cannot be Null.")
         if(datasets is None):
-            datasets = os.listdir(root_path)
+            datasets = [item.split('.')[0] for item in  os.listdir(root_path)]
         for dataset in datasets:
-            self.delete_dataset()
+            try:
+                self.delete_dataset(workspace_name, dataset, wait_till_completion)
+            except Exception as e:
+                    raise Exception(str(e))
+
+    def delete_all_dataflows(self, workspace_name, root_path=None, dataflows=None, wait_till_completion=False):
+        """
+        Deletes all dataflows from the given path on the Synapse workspace if the root_path is passed.
+        If order of deletion is important or you want to delete only selected assets,
+        pass the dataflows parameter with the required assets in the correct order.
+        """
+        if(root_path is None and dataflows is None):
+            raise AttributeError("Arguments root_path and dataflows cannot be Null.")
+        if(dataflows is None):
+            dataflows = [item.split('.')[0] for item in  os.listdir(root_path)]
+        for dataflow in dataflows:
+            try:
+                self.delete_dataflow(workspace_name, dataflow, wait_till_completion)
+            except Exception as e:
+                    raise Exception(str(e))
+    
+    def delete_all_pipelines(self, workspace_name, root_path=None, pipelines=None, wait_till_completion=False):
+        """
+        Deletes all pipelines from the given path on the Synapse workspace if the root_path is passed.
+        If order of deletion is important or you want to delete only selected assets,
+        pass the pipelines parameter with the required assets in the correct order.
+        """
+        if(root_path is None and pipelines is None):
+            raise AttributeError("Arguments root_path and pipelines cannot be Null.")
+        if(pipelines is None):
+            pipelines = [item.split('.')[0] for item in  os.listdir(root_path)]
+        for pipeline in pipelines:
+            try:
+                self.delete_pipeline(workspace_name, pipeline, wait_till_completion)
+            except Exception as e:
+                    raise Exception(str(e))
+
+    def delete_all_notebooks(self, workspace_name, root_path=None, notebooks=None, wait_till_completion=False):
+        """
+        Deletes all notebooks from the given path on the Synapse workspace if the root_path is passed.
+        If order of deletion is important or you want to delete only selected assets,
+        pass the notebooks parameter with the required assets in the correct order.
+        """
+        if(root_path is None and notebooks is None):
+            raise AttributeError("Arguments root_path and notebooks cannot be Null.")
+        if(notebooks is None):
+            notebooks = [item.split('.')[0] for item in  os.listdir(root_path)]
+        for notebook in notebooks:
+            try:
+                self.delete_notebook(workspace_name, notebook, wait_till_completion)
+            except Exception as e:
+                    raise Exception(str(e))
+    
+    def delete_all_linked_services(self, workspace_name, root_path=None, linked_services=None, wait_till_completion=False):
+        """
+        Deletes all linked services from the given path on the Synapse workspace if the root_path is passed.
+        If order of deletion is important or you want to delete only selected assets,
+        pass the linked services parameter with the required assets in the correct order.
+        """
+        if(root_path is None and linked_services is None):
+            raise AttributeError("Arguments root_path and linked_services cannot be Null.")
+        if(linked_services is None):
+            linked_services = [item.split('.')[0] for item in  os.listdir(root_path)]
+        for linked_service in linked_services:
+            try:
+                self.delete_linked_service(workspace_name, linked_service, wait_till_completion)
+            except Exception as e:
+                    raise Exception(str(e))

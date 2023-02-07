@@ -1,11 +1,4 @@
-# need to run "pip install -r requirements.txt"
-import secrets
-import string
-import os, random
-import json
 import logging
-from uuid import uuid4
-from datetime import datetime
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.storage.filedatalake import DataLakeServiceClient

@@ -1,17 +1,13 @@
 import uuid
 from .forms import InstallationForm, MetadataFormSet, ProfileForm
-#from OEA_Portal.settings import TENANT_ID, SUBSCRIPTION_ID
-from OEA_Portal.core.services.BlobService import get_blob_contents
+from OEA_Portal.core.services.AssetManagementService.asset import OEAAssetFactory
+from OEA_Portal.core.services.AssetManagementService.operations import *
+from OEA_Portal.core.services.AssetManagementService.module import EdFiModule
 from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
-from django.views.generic.edit import FormView
-from OEA_Portal.core.services.utils import get_config_data\
-        , update_config_database, get_all_storage_accounts_in_subscription, get_all_workspaces_in_subscription, is_oea_installed_in_workspace
-from OEA_Portal.core.services.ModuleManagementService import get_module_data_for_all_workspaces\
-    , delete_module_from_workspace
+from OEA_Portal.core.services.utils import *
 from django.views.generic.list import ListView
 from django.views.generic import TemplateView
-from .models import InstallationLogs, TableMetadata
 from django.shortcuts import redirect
 from OEA_Portal.core.OEAInstaller import OEAInstaller
 
@@ -19,12 +15,19 @@ base_url = 'temp'
 
 class HomeView(TemplateView):
     template_name = 'core/homepage.html'
+    config = get_config_data()
 
     def get(self, *args, **kwargs):
         global base_url
         if('base_url' in self.request.GET):
             base_url = self.request.GET['base_url']
-        return self.render_to_response({'base_url':base_url})
+        subscriptions = [i[0] for i in get_all_subscriptions_in_tenant()]
+        workspaces = get_all_workspaces_in_subscription(AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId']))
+        return self.render_to_response({'base_url':base_url,
+        'tenants':['123', '456'],
+        'subscriptions':subscriptions,
+        'workspaces':workspaces
+        })
 
 class InstallationFormView(TemplateView):
     template_name = 'core/installation_form.html'
@@ -114,11 +117,7 @@ class InstalledModulesView(TemplateView):
         return self.render_to_response({'data':data})
 
 def delete_module(request):
-    config = get_config_data()
-    tenant_id = config['TenantId']
-    subscription_id = config['SubscriptionId']
-    azure_client = AzureClient(tenant_id, subscription_id)
-    print(get_all_workspaces_in_subscription(azure_client))
-    print(get_all_storage_accounts_in_subscription(azure_client))
-    print(is_oea_installed_in_workspace(azure_client, 'syn-oea-abhinav4', 'rg-oea-abhinav4'))
+    instance = OEAAssetFactory().get_asset(asset_name='edfi', asset_type='module', name='Ed-Fi', latest_version="0.1", min_oea_version="0.7")
+    instance.install()
     return HttpResponse('hello')
+

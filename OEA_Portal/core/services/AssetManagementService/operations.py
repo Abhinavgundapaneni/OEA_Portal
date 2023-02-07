@@ -1,9 +1,10 @@
 from OEA_Portal.settings import BASE_DIR
-from . import SynapseManagementService
+from .. import SynapseManagementService
 import urllib.request
 import zipfile
 import os
 import json
+
 
 def download_and_extract_module(url, path=f'{BASE_DIR}/temp'.replace("\\", "/")):
     try:
@@ -13,6 +14,12 @@ def download_and_extract_module(url, path=f'{BASE_DIR}/temp'.replace("\\", "/"))
         return path
     except:
         raise Exception(f"Unable to Download or Extract ZIP file from URL - {url}")
+
+def get_oea_modules():
+    url = "https://api.github.com/repos/microsoft/OpenEduAnalytics/contents/modules/module_catalog?ref=main"
+    request = urllib.request.Request(url)
+    response = json.loads(urllib.request.urlopen(request))
+    return [module["name"] for module in response]
 
 def delete_module_from_workspace(workspace, module):
     pass

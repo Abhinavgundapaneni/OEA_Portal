@@ -1,19 +1,21 @@
 import uuid
 from django.db import models
 
-class InstallationLogs(models.Model):
-    id = models.UUIDField(default=uuid.uuid4,
-                          max_length=50,
-                          primary_key=True)
-    request_id = models.CharField(max_length=20)
-    action = models.CharField(max_length=20)
-    message = models.TextField(max_length=500)
-    timestamp = models.DateTimeField(auto_now=True)
+class SynapseWorkspace:
+    def __init__(self, workspace_name, resource_group, subscription) -> None:
+        self.workspace_name = workspace_name
+        self.resource_group = resource_group
+        self.subscription = subscription
 
-class TableMetadata(models.Model):
-    id = models.IntegerField(auto_created=True, primary_key=True)
-    table_name = models.CharField(max_length=100)
-    column_name = models.CharField(max_length=100)
-    column_type = models.CharField(max_length=20)
-    constraint = models.CharField(max_length=20)
-    pseuodynimization = models.CharField(max_length=20)
+class AzureSubscription:
+    def __init__(self, subscription_name, subscription_id) -> None:
+        self.subscription_name = subscription_name
+        self.subscription_id = subscription_id
+
+#todo: Find a better name for this
+class InstallationConfig:
+    def __init__(self, workspace_name, resource_group, keyvault, linked_storage_account) -> None:
+        self.workspace_name = workspace_name
+        self.resource_group = resource_group
+        self.keyvault = keyvault
+        self.storage_account = linked_storage_account

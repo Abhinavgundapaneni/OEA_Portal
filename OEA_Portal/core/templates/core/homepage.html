@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+
 {% load static %}
 {% block content %}
   <script>
@@ -12,5 +12,34 @@
         }
     })
   </script>
-  <h1> This is OEA Homepage. Stay Tuned! </h1>
+  <h3>New to OEA? Click here to Install OEA in your Azure Subscription.</h3>
+
+  <form>
+    <label for="TenantSelect">Tenant:</label>
+    <select name="TenantSelect" id="TenantSelect">
+      {% if tenants %}
+        {% for tenant in tenants %}
+        <option value="{{ tenant }}">{{ tenant }}</option>
+        {% endfor %}
+      {% endif %}
+    </select>
+
+    <label for="SubscriptionSelect">Subscription:</label>
+    <select name="SubscriptionSelect" id="SubscriptionSelect">
+      {% if subscriptions %}
+        {% for subscription in subscriptions %}
+        <option value="{{ subscription }}">{{ subscription }}</option>
+        {% endfor %}
+      {% endif %}
+    </select>
+
+    <label for="WorkspaceSelect">Workspace:</label>
+    <select name="WorkspaceSelect" id="WorkspaceSelect">
+      {% if workspaces %}
+        {% for workspace in workspaces %}
+        <option value="{{ workspace }}">{{ workspace }}</option>
+        {% endfor %}
+      {% endif %}
+    </select>
+  </form>
 {% endblock %}

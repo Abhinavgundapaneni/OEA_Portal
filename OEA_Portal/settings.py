@@ -164,3 +164,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CONFIG_DATABASE = f'{BASE_DIR}/temp/config.json'.replace('\\', '/')
 WORKSPACE_DB_ROOT_PATH = 'oea/admin/workspaces'
+OEA_ASSETS = ['module', 'package', 'schema']

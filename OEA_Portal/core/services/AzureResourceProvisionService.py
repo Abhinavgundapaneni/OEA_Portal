@@ -91,7 +91,6 @@ class AzureResourceProvisionService:
         """ Creates the given containers and directories in a given storage account """
         storage_client = self.azure_client.get_storage_client()
         keys = storage_client.storage_accounts.list_keys(resource_group_name, storage_account_name)
-        conn_string = f"DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName={storage_account_name};AccountKey={keys.keys[0].value}"
         for name in container_names:
             container = storage_client.blob_containers.create(resource_group_name, storage_account_name, name, {})
             for directory_path in ['/'.join(x.split('/')[1:]) for x in directory_list if x.split('/')[0] == name]:
