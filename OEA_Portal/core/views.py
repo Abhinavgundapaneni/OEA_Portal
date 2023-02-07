@@ -21,7 +21,7 @@ class HomeView(TemplateView):
         global base_url
         if('base_url' in self.request.GET):
             base_url = self.request.GET['base_url']
-        subscriptions = [i[0] for i in get_all_subscriptions_in_tenant()]
+        subscriptions = get_all_subscriptions_in_tenant()
         workspaces = get_all_workspaces_in_subscription(AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId']))
         return self.render_to_response({'base_url':base_url,
         'tenants':['123', '456'],

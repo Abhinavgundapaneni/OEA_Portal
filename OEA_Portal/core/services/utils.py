@@ -2,6 +2,7 @@ import json
 import os
 from OEA_Portal.settings import CONFIG_DATABASE, WORKSPACE_DB_ROOT_PATH
 from OEA_Portal.auth.AzureClient import AzureClient
+from OEA_Portal.core.models import *
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.subscription import SubscriptionClient
 
@@ -40,14 +41,22 @@ def get_all_subscriptions_in_tenant():
     """
     Returns list of tuples all the subscriptions in a given tenant containing the id and name.
     """
+    subscription_models = []
     credential = DefaultAzureCredential()
-    return [(subscription.subscription_id, subscription.display_name) for subscription in SubscriptionClient(credential).subscriptions.list()]
+    subscriptions = SubscriptionClient(credential).subscriptions.list()
+    for subscription in subscriptions:
+        subscription_models.append(AzureSubscription(subscription.display_name, subscription.id))
+    return subscription_models
 
 def get_all_workspaces_in_subscription(azure_client:AzureClient):
     """
     Returns the list of all workspaces in a given subscription.
     """
-    return [x.name for x in azure_client.get_synapse_client().workspaces.list()]
+    workspace_models = []
+    workspaces = azure_client.get_synapse_client().workspaces.list()
+    for workspace in workspaces:
+        workspace_models.append(SynapseWorkspace(workspace.name, workspace.managed_resource_group_name, azure_client.subscription_id))
+    return
 
 def is_oea_installed_in_workspace(azure_client:AzureClient, workspace_name, resource_group_name):
     """

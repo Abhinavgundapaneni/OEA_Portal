@@ -28,7 +28,7 @@
     <select name="SubscriptionSelect" id="SubscriptionSelect">
       {% if subscriptions %}
         {% for subscription in subscriptions %}
-        <option value="{{ subscription }}">{{ subscription }}</option>
+        <option value="{{ subscription.subscription_id }}">{{ subscription.subscription_name }} - ({{ subscription.subscription_id }})</option>
         {% endfor %}
       {% endif %}
     </select>
