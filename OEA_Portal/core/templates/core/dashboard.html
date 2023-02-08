@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{{ modules|json_script:"modules" }}
+{{ packages|json_script:"packages" }}
+{{ schemas|json_script:"schemas" }}
+<script src="{{base_url}}/static/js/dashboard.js"></script>
+
+<div>
+    <h2>OEA Version: {{ oea_version }}</h2><br>
+    <h2>Linked Storage Account: {{ storage_account }}</h2><br>
+    <button type="submit" id="moduleBtn" class="btn btn-primary">Installed Modules</button><br>
+    <button type="submit" id="packageBtn" class="btn btn-primary">Installed Packages</button><br>
+    <button type="submit" id="schemaBtn" class="btn btn-primary">Installed Schemas</button><br>
+
+    <table class="installedAssetsTable" id="installedAssetsTable" style="visibility:hidden" align="center" style="width:80%">
+        <tr>
+            <th>Asset Name</th>
+            <th>Version</th>
+            <th>Last Updated Time</th>
+            <th>Delete</th>
+        </tr>
+        <tbody class="installedAssetsTableBody" id="installedAssetsTableBody"></tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

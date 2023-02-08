@@ -29,6 +29,21 @@ class HomeView(TemplateView):
         'workspaces':workspaces
         })
 
+class DashboardView(TemplateView):
+    template_name = 'core/dashboard.html'
+    config = get_config_data()
+
+    def get(self, *args, **kwargs):
+        workspace = get_workspace_object(AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId']), self.config['WorkspaceName'])
+        data = get_module_data_for_all_workspaces()
+        return self.render_to_response({
+            'modules':data[workspace.workspace_name]['Installed_Modules'],
+            'packages':[],
+            'schemas':[],
+            'oea_version': data[workspace.workspace_name]['OEA_Version'],
+            'storage_account': workspace.storage_account
+        })
+
 class InstallationFormView(TemplateView):
     template_name = 'core/installation_form.html'
     config = get_config_data()

@@ -37,6 +37,7 @@ def get_module_data_for_all_workspaces():
             data_dict[workspace] = workspace_data
     return data_dict
 
+
 def install_edfi_module(sms:SynapseManagementService, config, version='0.2'):
     """
     Installs the Ed-Fi Module on your Workspace. Default version : 0.2

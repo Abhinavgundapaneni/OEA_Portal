@@ -37,7 +37,7 @@
     <select name="WorkspaceSelect" id="WorkspaceSelect">
       {% if workspaces %}
         {% for workspace in workspaces %}
-        <option value="{{ workspace }}">{{ workspace }}</option>
+        <option value="{{ workspace.workspace_name }}">{{ workspace.workspace_name }}</option>
         {% endfor %}
       {% endif %}
     </select>

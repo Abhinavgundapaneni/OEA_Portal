@@ -2,10 +2,11 @@ import uuid
 from django.db import models
 
 class SynapseWorkspace:
-    def __init__(self, workspace_name, resource_group, subscription) -> None:
+    def __init__(self, workspace_name, resource_group, subscription, storage_account) -> None:
         self.workspace_name = workspace_name
         self.resource_group = resource_group
         self.subscription = subscription
+        self.storage_account = storage_account
 
 class AzureSubscription:
     def __init__(self, subscription_name, subscription_id) -> None:

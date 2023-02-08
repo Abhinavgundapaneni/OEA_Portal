@@ -39,7 +39,7 @@ def get_blob_contents(azure_client:AzureClient, storage_account_name, blob_path)
 
 def get_all_subscriptions_in_tenant():
     """
-    Returns list of tuples all the subscriptions in a given tenant containing the id and name.
+    Returns list of subscriptions in a given tenant containing the id and name.
     """
     subscription_models = []
     credential = DefaultAzureCredential()
@@ -48,6 +48,9 @@ def get_all_subscriptions_in_tenant():
         subscription_models.append(AzureSubscription(subscription.display_name, subscription.id))
     return subscription_models
 
+def get_storage_account_from_url(account_url):
+    return account_url.replace('.dfs.core.windows.net', '').replace('https://', '')
+
 def get_all_workspaces_in_subscription(azure_client:AzureClient):
     """
     Returns the list of all workspaces in a given subscription.
@@ -55,16 +58,28 @@ def get_all_workspaces_in_subscription(azure_client:AzureClient):
     workspace_models = []
     workspaces = azure_client.get_synapse_client().workspaces.list()
     for workspace in workspaces:
-        workspace_models.append(SynapseWorkspace(workspace.name, workspace.managed_resource_group_name, azure_client.subscription_id))
-    return
+        resource_group = workspace.id.split('/')[4]
+        storage_account = get_storage_account_from_url(workspace.default_data_lake_storage)
+        workspace_models.append(SynapseWorkspace(workspace.name, resource_group, azure_client.subscription_id, storage_account))
+    return workspace_models
 
-def is_oea_installed_in_workspace(azure_client:AzureClient, workspace_name, resource_group_name):
+def get_workspace_object(azure_client:AzureClient, workspace_name):
+    """
+    Returns the "SynapseWorkspace" model for a given workspace.
+    """
+    workspaces = azure_client.get_synapse_client().workspaces.list()
+    workspace = any(workspace for workspace in workspaces if workspace.name == workspace_name)
+    resource_group = workspace.id.split('/')[4]
+    storage_account = get_storage_account_from_url(workspace.default_data_lake_storage)
+    return SynapseWorkspace(workspace_name, resource_group, azure_client.subscription_id, storage_account)
+
+def is_oea_installed_in_workspace(azure_client:AzureClient, workspace:SynapseWorkspace):
     """
     Returns True if OEA is installed in the workspace, else False.
     """
-    linked_storage_account = azure_client.get_synapse_client().workspaces.get(resource_group_name=resource_group_name, workspace_name=workspace_name).default_data_lake_storage.account_url.replace('.dfs.core.windows.net', '').replace('https://', '')
-    keys = azure_client.get_storage_client().storage_accounts.list_keys(resource_group_name, linked_storage_account)
-    return azure_client.get_datalake_client(linked_storage_account, keys.keys[0].value).get_directory_client(file_system='oea', directory=f'admin/workspaces/{workspace_name}').exists()
+    linked_storage_account = azure_client.get_synapse_client().workspaces.get(resource_group_name=workspace.resource_group, workspace_name=workspace.workspace_name).default_data_lake_storage.account_url.replace('.dfs.core.windows.net', '').replace('https://', '')
+    keys = azure_client.get_storage_client().storage_accounts.list_keys(workspace.resource_group, linked_storage_account)
+    return azure_client.get_datalake_client(linked_storage_account, keys.keys[0].value).get_directory_client(file_system='oea', directory=f'admin/workspaces/{workspace.workspace_name}').exists()
 
 def get_all_storage_accounts_in_subscription(azure_client:AzureClient):
     """

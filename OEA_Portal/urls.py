@@ -15,8 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from OEA_Portal.core.views import InstallationFormView, MetadataAddView, \
-             HomeView, ProfileView, InstalledModulesView, delete_module
+from OEA_Portal.core.views import *
 from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
@@ -25,7 +24,7 @@ urlpatterns = [
     path('home', csrf_exempt(HomeView.as_view()), name='home'),
     path('install', csrf_exempt(InstallationFormView.as_view()), name='install'),
     path('metadata', csrf_exempt(MetadataAddView.as_view()), name='metadata'),
-    path('profile', csrf_exempt(ProfileView.as_view()), name='profile'),
+    path('dashboard', csrf_exempt(DashboardView.as_view()), name='dashboard'),
     path('installed_modules', csrf_exempt(InstalledModulesView.as_view()), name='installed_modules'),
     path('delete_module', csrf_exempt(delete_module), name='delete_module')
 ]

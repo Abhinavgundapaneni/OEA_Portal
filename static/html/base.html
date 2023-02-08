@@ -17,25 +17,18 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-kQtW33rZJAHjgefvhyyzcGF3C5TFyBQBA13V1RKPf4uH+bwyzQxZ6CmMZHmNBEfJ" crossorigin="anonymous"></script>
 
     <div>
-    <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-dark">
-      <a class="navbar-brand" href="{{base_url}}/home"><img src="{{base_url}}/static/media/oea-logo.png"  width="50" height="30"></a>
-      <a class="navbar-brand" href="{{base_url}}/home">Open Education Analytics</a>
-      <a class="navbar-brand  my-2 my-sm-0" href="{{base_url}}/home">Home</a>
-      <a class="navbar-brand  my-2 my-sm-0" href="{{base_url}}/install">Getting Started</a>
-      <a class="navbar-brand  my-2 my-sm-0" href="#">Documentation</a>
-      <a class="navbar-brand  my-2 my-sm-0" href="{{base_url}}/metadata">Metadata</a>
-      <div class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle right" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Account</a>
-        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-          <li><a class="dropdown-item" href="{{base_url}}/profile">Profile</a></li>
-          <li><a class="dropdown-item" href="{{base_url}}/installed_modules">Installed Modules</a></li>
-          <li><a class="dropdown-item" href="{{base_url}}/installed_packages">Installed Packages</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#">Something else here</a></li>
-        </ul>
+      <a href="{{base_url}}/dashboard">Dashboard</a>
+      <a href="{{base_url}}/metadata">Metadata</a>
+      <div class="dropdown">
+        <button>Resources</button>
+        <div class="dropdown-content">
+        <a href="{{base_url}}/modules">Modules</a>
+        <a href="{{base_url}}/packages">Packages</a>
+        <a href="{{base_url}}/schemas">Schemas</a>
+        </div>
       </div>
-    </nav>
-  </div>
+      <a href="{{base_url}}/switch_workspace">Switch Workspace</a>
+    </div>
 
     <hr>
     {% if messages %}
