@@ -5,8 +5,8 @@ function populate_asset_table(table, type) {
     assets = get_json_data(type)
     for(var asset in assets) {
         tr = table.insertRow(0);
-        var asset = tr.insertCell(-1);
-        asset.innerHTML = asset['Name']
+        var asset_name = tr.insertCell(-1);
+        asset_name.innerHTML = asset['Name']
         var version = tr.insertCell(-1);
         version.innerHTML = asset['Version']
         var lastUpdatedTime = tr.insertCell(-1);
