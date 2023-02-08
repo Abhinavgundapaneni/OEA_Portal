@@ -40,12 +40,12 @@ def get_module_data_for_all_workspaces():
             data_dict[workspace] = workspace_data
     return data_dict
 
-def get_installed_assets_in_worksapce(workspace_name, azure_client:AzureClient):
+def get_installed_assets_in_workspace(workspace_name, azure_client:AzureClient):
     """
     Returns the list of Installed modules, packages and assets in the given workspace.
     """
     workspace_object = next(ws for ws in azure_client.synapse_client.workspaces.list() if ws.name == workspace_name)
-    storage_account = workspace_object.default_data_lake_storage.account_url
+    storage_account = get_storage_account_from_url(workspace_object.default_data_lake_storage.account_url)
     data = get_blob_contents(azure_client, storage_account, f'oea/admin/workspaces/{workspace_name}/status.json')
     modules = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['Modules']]
     packages = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['Packages']]

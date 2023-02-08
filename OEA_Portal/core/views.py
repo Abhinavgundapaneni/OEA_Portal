@@ -36,7 +36,7 @@ class DashboardView(TemplateView):
     def get(self, *args, **kwargs):
         azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
         workspace = get_workspace_object(azure_client, self.config['WorkspaceName'])
-        modules, packages, schemas, version = get_installed_assets_in_worksapce(self.config['WorkspaceName'], azure_client)
+        modules, packages, schemas, version = get_installed_assets_in_workspace(self.config['WorkspaceName'], azure_client)
         return self.render_to_response({'base_url':self.config['BaseURL'],
             'modules':modules,
             'packages':packages,
