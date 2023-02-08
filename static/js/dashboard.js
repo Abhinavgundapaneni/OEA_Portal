@@ -6,11 +6,11 @@ function populate_asset_table(table, type) {
     for(var asset in assets) {
         tr = table.insertRow(0);
         var asset = tr.insertCell(-1);
-        asset.innerHTML = asset['name']
+        asset.innerHTML = asset['Name']
         var version = tr.insertCell(-1);
-        version.innerHTML = asset['version']
+        version.innerHTML = asset['Version']
         var lastUpdatedTime = tr.insertCell(-1);
-        lastUpdatedTime.innerHTML = asset['lastUpdatedTime']
+        lastUpdatedTime.innerHTML = asset['LastUpdatedTime']
         var deleteBtn = document.createElement("button")
         deleteBtn.classList.add('btn')
         deleteBtn.classList.add('btn-primary')
@@ -32,8 +32,10 @@ window.addEventListener("load", function(){
     var modulesBtn = document.getElementById("modulesBtn")
     var packagesBtn = document.getElementById("packagesBtn")
     var schemasBtn = document.getElementById("schemasBtn")
-    var displayTable = document.getElementById("installedAssetsTableBody")
+    var tbody = document.getElementById("installedAssetsTableBody")
+    var table = document.getElementById("installedAssetsTable")
+    table.style.display = "table"
     modulesBtn.addEventListener("click", e => {
-        populate_asset_table(displayTable, "modules")
+        populate_asset_table(tbody, "modules")
     })
 })
