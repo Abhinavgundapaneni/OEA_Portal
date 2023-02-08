@@ -34,13 +34,14 @@ class DashboardView(TemplateView):
     config = get_config_data()
 
     def get(self, *args, **kwargs):
-        workspace = get_workspace_object(AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId']), self.config['WorkspaceName'])
-        data = get_module_data_for_all_workspaces()
+        azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
+        workspace = get_workspace_object(azure_client, self.config['WorkspaceName'])
+        modules, packages, schemas, version = get_installed_assets_in_worksapce(self.config['WorkspaceName'], azure_client)
         return self.render_to_response({'base_url':self.config['BaseURL'],
-            'modules':data[workspace.workspace_name]['Installed_Modules'],
-            'packages':[],
-            'schemas':[],
-            'oea_version': data[workspace.workspace_name]['OEA_Version'],
+            'modules':modules,
+            'packages':packages,
+            'schemas':schemas,
+            'oea_version': version,
             'storage_account': workspace.storage_account
         })
 
