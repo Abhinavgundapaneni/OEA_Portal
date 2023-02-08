@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
-{{ modules|json_script:"modules" }}
-{{ packages|json_script:"packages" }}
-{{ schemas|json_script:"schemas" }}
+{{ modules|"modules" }}
+{{ packages|"packages" }}
+{{ schemas|"schemas" }}
 <script src="{{base_url}}/static/js/dashboard.js"></script>
 
 <div>
