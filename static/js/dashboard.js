@@ -4,7 +4,7 @@ function populate_asset_table(table, type) {
       }
     assets = get_json_data(type)
     for(var idx in assets) {
-        tr = table.insertRow(0);
+        tr = table.insertRow(-1);
         var asset_name = tr.insertCell(-1);
         asset_name.innerHTML = assets[idx]['Name']
         var version = tr.insertCell(-1);
