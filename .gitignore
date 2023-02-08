@@ -1,4 +1,4 @@
 .sqlite3
 /temp
 /venv
-.pyc
+*.pyc

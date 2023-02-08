@@ -68,7 +68,8 @@ def get_workspace_object(azure_client:AzureClient, workspace_name):
     Returns the "SynapseWorkspace" model for a given workspace.
     """
     workspaces = azure_client.get_synapse_client().workspaces.list()
-    workspace = any(workspace for workspace in workspaces if workspace.name == workspace_name)
+    workspace = next(workspace for workspace in workspaces if workspace.name == workspace_name)
+    # raise error if workspace not found.
     resource_group = workspace.id.split('/')[4]
     storage_account = get_storage_account_from_url(workspace.default_data_lake_storage)
     return SynapseWorkspace(workspace_name, resource_group, azure_client.subscription_id, storage_account)
