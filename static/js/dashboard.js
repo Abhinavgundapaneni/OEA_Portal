@@ -3,14 +3,14 @@ function populate_asset_table(table, type) {
         table.deleteRow(0);
       }
     assets = get_json_data(type)
-    for(var asset in assets) {
+    for(var idx in assets) {
         tr = table.insertRow(0);
         var asset_name = tr.insertCell(-1);
-        asset_name.innerHTML = asset['Name']
+        asset_name.innerHTML = assets[idx]['Name']
         var version = tr.insertCell(-1);
-        version.innerHTML = asset['Version']
+        version.innerHTML = assets[idx]['Version']
         var lastUpdatedTime = tr.insertCell(-1);
-        lastUpdatedTime.innerHTML = asset['LastUpdatedTime']
+        lastUpdatedTime.innerHTML = assets[idx]['LastUpdatedTime']
         var deleteBtn = document.createElement("button")
         deleteBtn.classList.add('btn')
         deleteBtn.classList.add('btn-primary')
