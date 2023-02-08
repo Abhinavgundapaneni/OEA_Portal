@@ -59,7 +59,7 @@ def get_all_workspaces_in_subscription(azure_client:AzureClient):
     workspaces = azure_client.get_synapse_client().workspaces.list()
     for workspace in workspaces:
         resource_group = workspace.id.split('/')[4]
-        storage_account = get_storage_account_from_url(workspace.default_data_lake_storage)
+        storage_account = get_storage_account_from_url(workspace.default_data_lake_storage.account_url)
         workspace_models.append(SynapseWorkspace(workspace.name, resource_group, azure_client.subscription_id, storage_account))
     return workspace_models
 
