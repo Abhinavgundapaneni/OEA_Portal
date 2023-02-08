@@ -1,5 +1,5 @@
 function populate_asset_table(table, type) {
-    table.hidden = false
+    table.style.visibility = "visible"
     while(table.rows.length > 1) {
         table.deleteRow(-1);
       }
@@ -35,7 +35,7 @@ window.addEventListener("load", function(){
     var schemasBtn = document.getElementById("schemasBtn")
     var tbody = document.getElementById("installedAssetsTableBody")
     var table = document.getElementById("installedAssetsTable")
-    table.hidden = true
+    table.style.visibility = "hidden"
     modulesBtn.addEventListener("click", e => {
         populate_asset_table(tbody, "modules")
     })
