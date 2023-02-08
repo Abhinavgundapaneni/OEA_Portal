@@ -30,7 +30,7 @@ def get_blob_contents(azure_client:AzureClient, storage_account_name, blob_path)
     Downloads and returns the contents of a blob in a given storage account.
     """
     container_name = blob_path.split('/')[0].replace('/', '')
-    blob_name = ''.join(blob_path.split('/')[1:], '/')
+    blob_name = '/'.join(blob_path.split('/')[1:])
     try:
         data = azure_client.get_blob_client(storage_account_name, container_name, blob_name).download_blob()
     except:
