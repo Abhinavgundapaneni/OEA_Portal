@@ -1,4 +1,5 @@
 function populate_asset_table(table, type) {
+    table.style.display = "table"
     while(table.rows.length > 1) {
         table.deleteRow(-1);
       }
@@ -34,8 +35,14 @@ window.addEventListener("load", function(){
     var schemasBtn = document.getElementById("schemasBtn")
     var tbody = document.getElementById("installedAssetsTableBody")
     var table = document.getElementById("installedAssetsTable")
-    table.style.display = "table"
+    table.style.display = "none"
     modulesBtn.addEventListener("click", e => {
         populate_asset_table(tbody, "modules")
+    })
+    packagesBtn.addEventListener("click", e => {
+        populate_asset_table(tbody, "packages")
+    })
+    schemasBtn.addEventListener("click", e => {
+        populate_asset_table(tbody, "schemas")
     })
 })
