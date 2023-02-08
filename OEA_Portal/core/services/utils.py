@@ -32,10 +32,13 @@ def get_blob_contents(azure_client:AzureClient, storage_account_name, blob_path)
     container_name = blob_path.split('/')[0].replace('/', '')
     blob_name = '/'.join(blob_path.split('/')[1:])
     try:
-        data = azure_client.get_blob_client(storage_account_name, container_name, blob_name).download_blob()
+        data = azure_client.get_blob_client(storage_account_name, container_name, blob_name)\
+                .download_blob(max_concurrency=1, encoding='UTF-8').readall()
+        data_json = json.loads(data)
+
     except:
         raise Exception(f'Unable to download blob from Storage account - {storage_account_name}')
-    return data
+    return data_json
 
 def get_all_subscriptions_in_tenant():
     """
