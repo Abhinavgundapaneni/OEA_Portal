@@ -23,7 +23,7 @@ class HomeView(TemplateView):
             base_url = self.request.GET['base_url']
         subscriptions = get_all_subscriptions_in_tenant()
         workspaces = get_all_workspaces_in_subscription(AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId']))
-        return self.render_to_response({'base_url':base_url,
+        return self.render_to_response({'base_url':self.config['BaseURL'],
         'tenants':['123', '456'],
         'subscriptions':subscriptions,
         'workspaces':workspaces
@@ -36,7 +36,7 @@ class DashboardView(TemplateView):
     def get(self, *args, **kwargs):
         workspace = get_workspace_object(AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId']), self.config['WorkspaceName'])
         data = get_module_data_for_all_workspaces()
-        return self.render_to_response({'base_url':base_url,
+        return self.render_to_response({'base_url':self.config['BaseURL'],
             'modules':data[workspace.workspace_name]['Installed_Modules'],
             'packages':[],
             'schemas':[],
