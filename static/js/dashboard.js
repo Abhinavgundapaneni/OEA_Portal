@@ -1,6 +1,6 @@
 function populate_asset_table(table, type) {
-    while(table.rows.length > 0) {
-        table.deleteRow(0);
+    while(table.rows.length > 1) {
+        table.deleteRow(-1);
       }
     assets = get_json_data(type)
     for(var idx in assets) {
