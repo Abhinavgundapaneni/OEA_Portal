@@ -1,5 +1,7 @@
 function populate_asset_table(table, type) {
-    table.children().remove()
+    while(table.rows.length > 0) {
+        table.deleteRow(0);
+      }
     assets = get_json_data(type)
     for(var asset in assets) {
         tr = table.insertRow(0);
