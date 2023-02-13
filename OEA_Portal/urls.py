@@ -23,8 +23,7 @@ urlpatterns = [
     path('', csrf_exempt(HomeView.as_view()), name='home'),
     path('home', csrf_exempt(HomeView.as_view()), name='home'),
     path('install', csrf_exempt(InstallationFormView.as_view()), name='install'),
-    path('metadata', csrf_exempt(MetadataAddView.as_view()), name='metadata'),
     path('dashboard', csrf_exempt(DashboardView.as_view()), name='dashboard'),
-    path('installed_modules', csrf_exempt(InstalledModulesView.as_view()), name='installed_modules'),
-    path('delete_module', csrf_exempt(delete_module), name='delete_module')
+    path('profile', csrf_exempt(ProfileView.as_view()), name='profile'),
+    path('installed_modules', csrf_exempt(InstalledModulesView.as_view()), name='installed_modules')
 ]

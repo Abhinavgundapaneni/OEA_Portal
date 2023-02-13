@@ -14,9 +14,8 @@ import os
 from pathlib import Path
 import dotenv
 
-dotenv.load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = str(Path(__file__).resolve().parent.parent).replace("\\", "/")
 
 
 # Quick-start development settings - unsuitable for production
@@ -112,7 +111,7 @@ WSGI_APPLICATION = 'OEA_Portal.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'newdb.sqlite3',
+        'NAME': BASE_DIR + '/newdb.sqlite3',
     }
 }
 
@@ -162,6 +161,6 @@ STATICFILES_DIRS = (
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CONFIG_DATABASE = f'{BASE_DIR}/temp/config.json'.replace('\\', '/')
+CONFIG_DATABASE = f'{BASE_DIR}/downloads/config.json'
 WORKSPACE_DB_ROOT_PATH = 'oea/admin/workspaces'
-OEA_ASSETS = ['module', 'package', 'schema']
+OEA_ASSET_TYPES = ['module', 'package', 'schema']

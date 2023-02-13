@@ -1,8 +1,7 @@
 import uuid
 from .forms import InstallationForm, MetadataFormSet, ProfileForm
-from OEA_Portal.core.services.AssetManagementService.asset import OEAAssetFactory
+from OEA_Portal.core.services.AssetManagementService.asset import BaseOEAAsset
 from OEA_Portal.core.services.AssetManagementService.operations import *
-from OEA_Portal.core.services.AssetManagementService.module import EdFiModule
 from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from OEA_Portal.core.services.utils import *
@@ -72,32 +71,6 @@ class InstallationFormView(TemplateView):
         oea_installer.install(request_id)
         return redirect('home')
 
-class MetadataAddView(TemplateView):
-    template_name = "core/metadata_form.html"
-
-    def get(self, *args, **kwargs):
-        formset = MetadataFormSet()
-        return self.render_to_response({'metadata_formset': formset, 'base_url':base_url})
-
-    def post(self, *args, **kwargs):
-        formset = MetadataFormSet(data=self.request.POST)
-        if formset.is_valid():
-            for form in formset:
-                table_name = form.data.get('table-name')
-                col_name = form.cleaned_data.get('column_name')
-                col_type = form.cleaned_data.get('column_type')
-                pseuodynimization = form.cleaned_data.get('pseuodynimization')
-                constraint = form.cleaned_data.get('constraint')
-                TableMetadata(
-                    table_name=table_name,
-                    column_name=col_name,
-                    column_type=col_type,
-                    constraint=constraint,
-                    pseuodynimization=pseuodynimization).save()
-            return self.render_to_response({'metadata_formset': MetadataFormSet()})
-
-        return self.render_to_response({'metadata_formset': formset})
-
 class ProfileView(TemplateView):
     template_name = 'core/profile.html'
 
@@ -107,11 +80,8 @@ class ProfileView(TemplateView):
         return context
 
     def get(self, *args, **kwargs):
-        config = get_config_data()
-        tenant_id = config['TenantId']
-        subscription_id = config['SubscriptionId']
-        profile_form = ProfileForm(initial=({'tenant_id':tenant_id, 'subscription_id':subscription_id}))
-        return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
+        asset = BaseOEAAsset("Ed-Fi", "edfi", "0.2", "0.7", "module")
+        asset.install()
 
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')
@@ -129,11 +99,7 @@ class InstalledModulesView(TemplateView):
         return context
 
     def get(self, *args, **kwargs):
-        data = get_module_data_for_all_workspaces()
+        data = get_installed_assets_in_workspace()
         return self.render_to_response({'data':data})
 
-def delete_module(request):
-    instance = OEAAssetFactory().get_asset(asset_name='edfi', asset_type='module', name='Ed-Fi', latest_version="0.1", min_oea_version="0.7")
-    instance.install()
-    return HttpResponse('hello')
 

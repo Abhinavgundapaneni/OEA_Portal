@@ -1,10 +1,26 @@
 import json
 import os
-from OEA_Portal.settings import CONFIG_DATABASE, WORKSPACE_DB_ROOT_PATH
+from OEA_Portal.settings import CONFIG_DATABASE, BASE_DIR
+import urllib.request
+import zipfile
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.models import *
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.subscription import SubscriptionClient
+
+
+def download_and_extract_zip_from_url(url, path=f'{BASE_DIR}/downloads'):
+    """
+    Downloads a zip file from an given URL into local file system path. If the parameter path is not passed, it defaults
+    the destination location to /downloads folder in the root directory.
+    """
+    try:
+        zip_path, _ = urllib.request.urlretrieve(url)
+        with zipfile.ZipFile(zip_path, "r") as f:
+            f.extractall(path)
+        return path
+    except:
+        raise Exception(f"Unable to Download or Extract ZIP file from URL - {url}")
 
 def get_config_data():
     """

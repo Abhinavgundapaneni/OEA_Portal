@@ -1,4 +1,4 @@
 .sqlite3
-/temp
+/downloads
 /venv
-*.pyc
+/*/__pycache__/*
