@@ -2,10 +2,9 @@ import os
 import json
 import logging
 from OEA_Portal.auth.AzureClient import AzureClient
-from azure.mgmt.synapse.models import Workspace, DataLakeStorageAccountDetails, ManagedIdentity, IpFirewallRuleInfo
+from OEA_Portal.core.models import OEAInstance
 from azure.mgmt.synapse.models import BigDataPoolResourceInfo, AutoScaleProperties, AutoPauseProperties, LibraryRequirements,\
-     NodeSizeFamily, NodeSize, BigDataPoolPatchInfo, IpFirewallRuleInfo
-from OEA_Portal.settings import BASE_DIR
+     NodeSizeFamily, NodeSize, BigDataPoolPatchInfo
 
 logger = logging.getLogger('SynapseManagementService')
 
@@ -14,46 +13,46 @@ class SynapseManagementService:
         self.azure_client = azure_client
         self.resource_group_name = resource_group_name
 
-    def replace_strings(self, data, config):
-        data = data.replace('yourkeyvault', config['keyvault'])\
-                        .replace('yourstorageaccount', config['storage_account'])\
-                        .replace('yoursynapseworkspace', config['workspace'])
+    def replace_strings(self, data, oea_instance:OEAInstance):
+        data = data.replace('yourkeyvault', oea_instance.keyvault)\
+                        .replace('yourstorageaccount', oea_instance.storage_account)\
+                        .replace('yoursynapseworkspace', oea_instance.workspace_name)
         return data
 
-    def create_or_update_pipeline(self, config, pipeline_file_path, pipeline_name, wait_till_completion):
+    def create_or_update_pipeline(self, oea_instance:OEAInstance, pipeline_file_path, pipeline_name, wait_till_completion):
         """ Creates or updates the Pipeline in the given Synapse studio.
             Expects the pipeline configuration file in JSON format.
         """
-        with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read(), config))
+        with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read(), oea_instance))
         if '$schema' not in pipeline_dict.keys():
-            poller = self.azure_client.get_artifacts_client(config['workspace']).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
+            poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
             if(wait_till_completion):
                 return poller.result() #AzureOperationPoller
             else:
                 return poller
 
-    def create_or_update_dataflow(self, config, dataflow_file_path, wait_till_completion):
+    def create_or_update_dataflow(self, oea_instance:OEAInstance, dataflow_file_path, wait_till_completion):
         """ Creates or updates the Dataflow in the given Synapse studio.
             Expects the dataflow configuration file in JSON format.
         """
-        with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read(), config))
-        poller = self.azure_client.get_artifacts_client(config['workspace']).data_flow.begin_create_or_update_data_flow(dataflow_dict['name'], dataflow_dict['properties'])
+        with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read(), oea_instance))
+        poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).data_flow.begin_create_or_update_data_flow(dataflow_dict['name'], dataflow_dict['properties'])
         if(wait_till_completion):
             return poller.result() #AzureOperationPoller
         else:
             return poller
 
-    def create_notebook(self, notebook_filename, config, wait_till_completion):
+    def create_notebook(self, notebook_filename, oea_instance:OEAInstance, wait_till_completion):
         """ Creates or updates the Notebook in the given Synapse studio.
             Expects the dataflow configuration file in JSON or ipynb format.
         """
-        artifacts_client = self.azure_client.get_artifacts_client(config['workspace'])
+        artifacts_client = self.azure_client.get_artifacts_client(oea_instance.workspace_name)
         with open(notebook_filename) as f:
             if(notebook_filename.split('.')[-1] == 'json'):
-                notebook_dict = json.loads(self.replace_strings(f.read(), config))
+                notebook_dict = json.loads(self.replace_strings(f.read(), oea_instance))
                 notebook_name = notebook_dict['name']
             elif(notebook_filename.split('.')[-1] == 'ipynb'):
-                properties = json.loads(self.replace_strings(f.read(), config))
+                properties = json.loads(self.replace_strings(f.read(), oea_instance))
                 notebook_name = notebook_filename.split('/')[-1].split('.')[0]
                 notebook_dict = {"name": notebook_name, "properties": properties}
             else:
@@ -66,25 +65,25 @@ class SynapseManagementService:
         else:
             return poller
 
-    def create_linked_service(self, config, linked_service_name, file_path, wait_till_completion):
+    def create_linked_service(self, oea_instance:OEAInstance, linked_service_name, file_path, wait_till_completion):
         """ Creates a linked service in the Synapse studio.
             Expects a linked service configuration file in JSON format
         """
         # todo: modify this to use Python SDK
-        with open(file_path, 'r') as f: data = self.replace_strings(f.read(), config)
+        with open(file_path, 'r') as f: data = self.replace_strings(f.read(), oea_instance)
         with open(file_path, 'wt') as f: f.write(data)
 
-        os.system(f"az synapse linked-service create --workspace-name {config['workspace']} --name {linked_service_name} --file @{file_path} -o none")
+        os.system(f"az synapse linked-service create --workspace-name {oea_instance.workspace_name} --name {linked_service_name} --file @{file_path} -o none")
 
-    def create_dataset(self, config, dataset_name, file_path, wait_till_completion):
+    def create_dataset(self, oea_instance:OEAInstance, dataset_name, file_path, wait_till_completion):
         """ Creates a dataset in the Synapse studio.
             Expects a dataset configuration file in JSON format
         """
         # todo: modify this to use Python SDK
-        with open(file_path, 'r') as f: data = self.replace_strings(f.read(), config)
+        with open(file_path, 'r') as f: data = self.replace_strings(f.read(), oea_instance)
         with open(file_path, 'wt') as f: f.write(data)
 
-        os.system(f"az synapse dataset create --workspace-name {config['workspace']} --name {dataset_name} --file @{file_path} -o none")
+        os.system(f"az synapse dataset create --workspace-name {oea_instance.workspace_name} --name {dataset_name} --file @{file_path} -o none")
 
     def add_firewall_rule_for_synapse(self, rule_name, start_ip_address, end_ip_address, synapse_workspace_name):
         """ Create a Firewall rule for the Azure Synapse Studio """
@@ -215,7 +214,7 @@ class SynapseManagementService:
             return poller.result()
         return poller
 
-    def install_all_datasets(self, config, root_path, datasets=None, wait_till_completion=True):
+    def install_all_datasets(self, oea_instance:OEAInstance, root_path, datasets=None, wait_till_completion=True):
         """
         Installs all datasets from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -228,12 +227,12 @@ class SynapseManagementService:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    self.create_dataset(config, dataset.split('.')[0], f'{root_path}/{dataset}', wait_till_completion)
+                    self.create_dataset(oea_instance, dataset.split('.')[0], f'{root_path}/{dataset}', wait_till_completion)
                 except Exception as e:
                         #todo: Handle the error
                         raise Exception(str(e))
 
-    def install_all_dataflows(self, config, root_path, dataflows=None, wait_till_completion=True):
+    def install_all_dataflows(self, oea_instance:OEAInstance, root_path, dataflows=None, wait_till_completion=True):
         """
         Installs all dataflows from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -246,11 +245,11 @@ class SynapseManagementService:
                 dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    self.create_or_update_dataflow(config, f'{root_path}/{dataflow}', wait_till_completion)
+                    self.create_or_update_dataflow(oea_instance, f'{root_path}/{dataflow}', wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_notebooks(self, config, root_path, notebooks=None, wait_till_completion=True):
+    def install_all_notebooks(self, oea_instance:OEAInstance, root_path, notebooks=None, wait_till_completion=True):
         """
         Installs all notebooks from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -263,11 +262,11 @@ class SynapseManagementService:
                 notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    self.create_notebook(f"{root_path}/{notebook}", config, wait_till_completion)
+                    self.create_notebook(f"{root_path}/{notebook}", oea_instance, wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_pipelines(self, config, root_path, pipelines=None, wait_till_completion=True):
+    def install_all_pipelines(self, oea_instance:OEAInstance, root_path, pipelines=None, wait_till_completion=True):
         """
         Installs all pipelines from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -280,11 +279,11 @@ class SynapseManagementService:
                 pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    self.create_or_update_pipeline(config, f'{root_path}/{pipeline}', pipeline.split('.')[0], wait_till_completion)
+                    self.create_or_update_pipeline(oea_instance, f'{root_path}/{pipeline}', pipeline.split('.')[0], wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
-    def install_all_linked_services(self, config, root_path, linked_services=None, wait_till_completion=True):
+    def install_all_linked_services(self, oea_instance:OEAInstance, root_path, linked_services=None, wait_till_completion=True):
         """
         Installs all linked services from the given path on the Synapse workspace.
         If order of installation is important or you want to install only selected assets in the path,
@@ -296,7 +295,7 @@ class SynapseManagementService:
                 linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
-                    self.create_linked_service(config, ls.split('.')[0], f'{root_path}/{ls}', wait_till_completion)
+                    self.create_linked_service(oea_instance, ls.split('.')[0], f'{root_path}/{ls}', wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
@@ -331,7 +330,7 @@ class SynapseManagementService:
                 self.delete_dataflow(workspace_name, dataflow, wait_till_completion)
             except Exception as e:
                     raise Exception(str(e))
-    
+
     def delete_all_pipelines(self, workspace_name, root_path=None, pipelines=None, wait_till_completion=False):
         """
         Deletes all pipelines from the given path on the Synapse workspace if the root_path is passed.
@@ -363,7 +362,7 @@ class SynapseManagementService:
                 self.delete_notebook(workspace_name, notebook, wait_till_completion)
             except Exception as e:
                     raise Exception(str(e))
-    
+
     def delete_all_linked_services(self, workspace_name, root_path=None, linked_services=None, wait_till_completion=False):
         """
         Deletes all linked services from the given path on the Synapse workspace if the root_path is passed.

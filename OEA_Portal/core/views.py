@@ -73,7 +73,7 @@ class InstallationFormView(TemplateView):
 
 class ProfileView(TemplateView):
     template_name = 'core/profile.html'
-
+    config = get_config_data()
     def get_context_data(self, **kwargs):
         context = super(ProfileView, self).get_context_data(**kwargs)
         context['base_url'] = base_url
@@ -81,7 +81,8 @@ class ProfileView(TemplateView):
 
     def get(self, *args, **kwargs):
         asset = BaseOEAAsset("Ed-Fi", "edfi", "0.2", "0.7", "module")
-        asset.install()
+        azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
+        asset.install(azure_client, OEAInstance('syn-oea-abhinav4', 'rg-oea-abhinav4', 'kv-oea-abhinav4', 'stoeaabhinav4'))
 
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')
