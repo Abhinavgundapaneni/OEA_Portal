@@ -87,11 +87,12 @@ class BaseOEAAsset:
         Installs the Asset into the given Synapse workspace.
         """
         sms = SynapseManagementService(azure_client, oea_instance.resource_group)
+        pipeline_file_names = [f"{pipeline}.json" for pipeline in self.pipelines_dependency_order]
         sms.install_all_linked_services(oea_instance, f"{self.local_asset_root_path}/linkedService", self.linked_services)
         sms.install_all_datasets(oea_instance, f"{self.local_asset_root_path}/dataset", self.datasets)
         sms.install_all_dataflows(oea_instance, f"{self.local_asset_root_path}/dataflow", self.dataflows)
         sms.install_all_notebooks(oea_instance, f"{self.local_asset_root_path}/notebook", self.notebooks)
-        sms.install_all_pipelines(oea_instance, f"{self.local_asset_root_path}/pipeline", self.pipelines_dependency_order)
+        sms.install_all_pipelines(oea_instance, f"{self.local_asset_root_path}/pipeline", pipeline_file_names)
 
     def uninstall(self, workspace_name):
         """
