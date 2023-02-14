@@ -33,15 +33,21 @@ class SynapseManagementService:
 
     def create_managed_integration_runtime(self, oea_instance:OEAInstance, ir_path:str, wait_till_completion:bool):
         with open(ir_path) as f: ir_dict = json.loads(self.replace_strings(f.read(), oea_instance))
+        print(ir_dict)
         poller = self.azure_client.get_synapse_client().integration_runtimes.begin_create(
-            oea_instance.resource_group, oea_instance.workspace_name, ir_dict['name'],
-            integration_runtime=ManagedIntegrationRuntime(
+            resource_group_name=oea_instance.resource_group,
+            workspace_name = oea_instance.workspace_name,
+            integration_runtime_name = ir_dict['name'],
+            integration_runtime = ManagedIntegrationRuntime(
                 compute_properties=IntegrationRuntimeComputeProperties(
-                    location=ir_dict['properties']['typeProperties']['computeProperties']['location'], data_flow_properties=IntegrationRuntimeDataFlowProperties(
+                    location=ir_dict['properties']['typeProperties']['computeProperties']['location'],
+                    data_flow_properties=IntegrationRuntimeDataFlowProperties(
                         core_count=ir_dict['properties']['typeProperties']['computeProperties']['dataFlowProperties']['coreCount'],
                         compute_type=DataFlowComputeType.GENERAL,
                         time_to_live=ir_dict['properties']['typeProperties']['computeProperties']['dataFlowProperties']['timeToLive']
-                    )))
+                        )
+                    )
+                )
             )
         if(wait_till_completion):
             return poller.result() #AzureOperationPoller
