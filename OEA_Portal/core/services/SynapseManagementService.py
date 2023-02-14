@@ -4,8 +4,8 @@ import logging
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.models import OEAInstance
 from azure.mgmt.synapse.models import BigDataPoolResourceInfo, AutoScaleProperties, AutoPauseProperties, LibraryRequirements,\
-     NodeSizeFamily, NodeSize, BigDataPoolPatchInfo
-
+     NodeSizeFamily, NodeSize, BigDataPoolPatchInfo, ManagedIntegrationRuntime, IntegrationRuntimeComputeProperties, \
+        IntegrationRuntimeDataFlowProperties, DataFlowComputeType
 logger = logging.getLogger('SynapseManagementService')
 
 class SynapseManagementService:
@@ -30,6 +30,23 @@ class SynapseManagementService:
                 return poller.result() #AzureOperationPoller
             else:
                 return poller
+
+    def create_managed_integration_runtime(self, oea_instance:OEAInstance, ir_path:str, wait_till_completion:bool):
+        with open(ir_path) as f: ir_dict = json.loads(self.replace_strings(f.read(), oea_instance))
+        poller = self.azure_client.get_synapse_client().integration_runtimes.begin_create(
+            oea_instance.resource_group, oea_instance.workspace_name, ir_dict['name'],
+            integration_runtime=ManagedIntegrationRuntime(
+                compute_properties=IntegrationRuntimeComputeProperties(
+                    location=ir_dict['properties']['typeProperties']['computeProperties']['location'], data_flow_properties=IntegrationRuntimeDataFlowProperties(
+                        core_count=ir_dict['properties']['typeProperties']['computeProperties']['dataFlowProperties']['coreCount'],
+                        compute_type=DataFlowComputeType.GENERAL,
+                        time_to_live=ir_dict['properties']['typeProperties']['computeProperties']['dataFlowProperties']['timeToLive']
+                    )))
+            )
+        if(wait_till_completion):
+            return poller.result() #AzureOperationPoller
+        else:
+            return poller
 
     def create_or_update_dataflow(self, oea_instance:OEAInstance, dataflow_file_path, wait_till_completion):
         """ Creates or updates the Dataflow in the given Synapse studio.
@@ -246,6 +263,23 @@ class SynapseManagementService:
             for dataflow in dataflows:
                 try:
                     self.create_or_update_dataflow(oea_instance, f'{root_path}/{dataflow}', wait_till_completion)
+                except Exception as e:
+                    raise Exception(str(e))
+
+    def install_all_integration_runtimes(self, oea_instance:OEAInstance, root_path, integration_runtimes=None, wait_till_completion=True):
+        """
+        Installs all integration runtimes from the given path on the Synapse workspace.
+        If order of installation is important or you want to install only selected assets in the path,
+        pass the integration runtime parameter with the required assets in the correct order.
+        If not passed, it will install all the assets in the path.
+        """
+
+        if(os.path.isdir(f'{root_path}/') is True):
+            if(integration_runtimes is None):
+                integration_runtimes = [item for item in os.listdir(f'{root_path}/')]
+            for integration_runtime in integration_runtimes:
+                try:
+                    self.create_managed_integration_runtime(oea_instance, f'{root_path}/{integration_runtime}', wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 

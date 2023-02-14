@@ -88,13 +88,17 @@ class BaseOEAAsset:
         """
         sms = SynapseManagementService(azure_client, oea_instance.resource_group)
         pipeline_file_names = [f"{pipeline}.json" for pipeline in self.pipelines_dependency_order]
-        sms.install_all_linked_services(oea_instance, f"{self.local_asset_root_path}/linkedService", self.linked_services)
-        sms.install_all_datasets(oea_instance, f"{self.local_asset_root_path}/dataset", self.datasets)
-        sms.install_all_dataflows(oea_instance, f"{self.local_asset_root_path}/dataflow", self.dataflows)
-        sms.install_all_notebooks(oea_instance, f"{self.local_asset_root_path}/notebook", self.notebooks)
-        sms.install_all_pipelines(oea_instance, f"{self.local_asset_root_path}/pipeline", pipeline_file_names)
+        try:
+            sms.install_all_integration_runtimes(oea_instance, f"{self.local_asset_root_path}/integrationRuntime", self.integration_runtimes)
+            sms.install_all_linked_services(oea_instance, f"{self.local_asset_root_path}/linkedService", self.linked_services)
+            sms.install_all_datasets(oea_instance, f"{self.local_asset_root_path}/dataset", self.datasets)
+            sms.install_all_dataflows(oea_instance, f"{self.local_asset_root_path}/dataflow", self.dataflows)
+            sms.install_all_notebooks(oea_instance, f"{self.local_asset_root_path}/notebook", self.notebooks)
+            sms.install_all_pipelines(oea_instance, f"{self.local_asset_root_path}/pipeline", pipeline_file_names)
+        except RuntimeError as e:
+            raise RuntimeError(f"Error while installing asset '{self.asset_display_name}' on the workspace '{oea_instance.workspace_name} - {str(e)}")
 
-    def uninstall(self, workspace_name):
+    def uninstall(self, azure_client:AzureClient, oea_instance:OEAInstance):
         """
         Uninstalls the Asset into the given Synapse workspace.
         """
