@@ -43,11 +43,25 @@ def deploy_template_to_resource_group(azure_client:AzureClient):
                 mode='Incremental',
                 template=template_json,
                 parameters=json.dumps({
-                    "workspaceName": "syn-oea-abhinav4",
-                    "LS_SQL_Serverless_OEA": "LS_SQL_Serverless",
-                    "LS_HTTP": "LS_HTTP",
-                    "LS_ADLS_OEA": "LS_DataLake"
-                })
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspaceName": {
+      "value": "syn-oea-abhinav4"
+    },
+    "LS_SQL_Serverless_OEA": {
+      "value": "LS_SQL_Serverless"
+    },
+    "LS_HTTP": {
+      "value": "LS_HTTP"
+    },
+    "LS_ADLS_OEA": {
+      "value": "LS_DataLake"
+    }
+  }
+}
+
+)
             )
         )
     )
