@@ -37,9 +37,8 @@ def deploy_template_to_resource_group(azure_client:AzureClient):
     with open(f"{BASE_DIR}/downloads/parameters.json") as f : param_json = json.load(f)
     poller = azure_client.get_resource_client().deployments.begin_create_or_update(
         resource_group_name='rg-oea-abhinav4',
-        deployment_name='deployment-001',
+        deployment_name='deployment-002',
         parameters=Deployment(
-            location='eastus',
             properties=DeploymentProperties(
                 mode='Incremental',
                 template=template_json
