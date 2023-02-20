@@ -34,6 +34,7 @@ def get_installed_assets_in_workspace(workspace_name, azure_client:AzureClient):
 
 def deploy_template_to_resource_group(azure_client:AzureClient):
     with open(f"{BASE_DIR}/downloads/temp.json") as f : template_json = json.load(f)
+    with open(f"{BASE_DIR}/downloads/parameters.json") as f : param_json = json.load(f)
     poller = azure_client.get_resource_client().deployments.begin_create_or_update(
         resource_group_name='rg-oea-abhinav4',
         deployment_name='deployment-001',
@@ -42,26 +43,7 @@ def deploy_template_to_resource_group(azure_client:AzureClient):
             properties=DeploymentProperties(
                 mode='Incremental',
                 template=template_json,
-                parameters=json.dumps({
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-    "workspaceName": {
-      "value": "syn-oea-abhinav4"
-    },
-    "LS_SQL_Serverless_OEA": {
-      "value": "LS_SQL_Serverless"
-    },
-    "LS_HTTP": {
-      "value": "LS_HTTP"
-    },
-    "LS_ADLS_OEA": {
-      "value": "LS_DataLake"
-    }
-  }
-}
-
-)
+                parameters=param_json
             )
         )
     )
