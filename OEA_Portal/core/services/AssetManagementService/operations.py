@@ -42,8 +42,7 @@ def deploy_template_to_resource_group(azure_client:AzureClient):
             location='eastus',
             properties=DeploymentProperties(
                 mode='Incremental',
-                template=template_json,
-                parameters=param_json
+                template=template_json
             )
         )
     )
