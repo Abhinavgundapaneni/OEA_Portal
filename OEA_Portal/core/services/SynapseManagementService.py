@@ -52,7 +52,10 @@ class SynapseManagementService:
                 )
             ))
         if(wait_till_completion):
-            return poller.result() #AzureOperationPoller
+            print('Waiting for IR Creation.')
+            result = poller.result() #AzureOperationPoller
+            print('Comepleted creating IR.')
+            return result
         else:
             return poller
 
