@@ -42,12 +42,12 @@ def deploy_template_to_resource_group(azure_client:AzureClient):
             properties=DeploymentProperties(
                 mode='Incremental',
                 template=template_json,
-                parameters={
+                parameters=json.dumps({
                     "workspaceName": "syn-oea-abhinav4",
                     "LS_SQL_Serverless_OEA": "LS_SQL_Serverless",
                     "LS_HTTP": "LS_HTTP",
                     "LS_ADLS_OEA": "LS_DataLake"
-                }
+                })
             )
         )
     )
