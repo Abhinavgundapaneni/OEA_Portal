@@ -55,6 +55,8 @@ class SynapseManagementService:
             print('Waiting for IR Creation.')
             result = poller.result() #AzureOperationPoller
             print('Comepleted creating IR.')
+            print(result)
+            print(poller)
             return result
         else:
             return poller
