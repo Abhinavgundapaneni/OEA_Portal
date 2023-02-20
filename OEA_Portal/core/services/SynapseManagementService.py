@@ -32,8 +32,10 @@ class SynapseManagementService:
                 return poller
 
     def create_managed_integration_runtime(self, oea_instance:OEAInstance, ir_path:str, wait_till_completion:bool):
+        """ Creates a Managed Integration runtime in a Synapse workspace based on the configuration from a JSON file.
+        """
+
         with open(ir_path) as f: ir_dict = json.loads(self.replace_strings(f.read(), oea_instance))
-        print(ir_dict)
         poller = self.azure_client.get_synapse_client().integration_runtimes.begin_create(
             resource_group_name=oea_instance.resource_group,
             workspace_name = oea_instance.workspace_name,
@@ -52,12 +54,7 @@ class SynapseManagementService:
                 )
             ))
         if(wait_till_completion):
-            print('Waiting for IR Creation.')
-            result = poller.result() #AzureOperationPoller
-            print('Comepleted creating IR.')
-            print(result)
-            print(poller)
-            return result
+            return poller.result()
         else:
             return poller
 

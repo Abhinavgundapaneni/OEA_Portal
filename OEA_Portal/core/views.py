@@ -5,6 +5,7 @@ from OEA_Portal.core.services.AssetManagementService.operations import *
 from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from OEA_Portal.core.services.utils import *
+from OEA_Portal.core.services.AssetManagementService.operations import deploy_template_to_resource_group
 from django.views.generic.list import ListView
 from django.views.generic import TemplateView
 from django.shortcuts import redirect
@@ -80,9 +81,8 @@ class ProfileView(TemplateView):
         return context
 
     def get(self, *args, **kwargs):
-        asset = BaseOEAAsset("Ed-Fi", "edfi", "0.2", "0.7", "module")
         azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
-        asset.install(azure_client, OEAInstance('syn-oea-abhinav4', 'rg-oea-abhinav4', 'kv-oea-abhinav4', 'stoeaabhinav4'))
+        deploy_template_to_resource_group(azure_client)
 
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')

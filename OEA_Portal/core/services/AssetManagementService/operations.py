@@ -1,8 +1,9 @@
-from OEA_Portal.settings import OEA_ASSET_TYPES
+from OEA_Portal.settings import OEA_ASSET_TYPES, BASE_DIR
 from .. import SynapseManagementService
 from ..utils import get_blob_contents, get_storage_account_from_url, download_and_extract_zip_from_url
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.models import OEAInstalledAsset
+from azure.mgmt.resource.resources.models import Deployment, DeploymentProperties
 import urllib.request
 import os
 import json
@@ -31,3 +32,23 @@ def get_installed_assets_in_workspace(workspace_name, azure_client:AzureClient):
     schemas = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['Schemas']]
     return modules, packages, schemas, data['OEA_Version']
 
+def deploy_template_to_resource_group(azure_client:AzureClient):
+    with open(f"{BASE_DIR}/downloads/temp.json") as f : template_json = json.load(f)
+    poller = azure_client.resource_client.deployments.begin_create_or_update(
+        resource_group_name='rg-oea-abhinav4',
+        deployment_name='deployment-001',
+        parameters=Deployment(
+            location='eastus',
+            properties=DeploymentProperties(
+                mode='Incremental',
+                template=template_json,
+                parameters={
+                    "workspaceName": "syn-oea-abhinav4",
+                    "LS_SQL_Serverless_OEA": "LS_SQL_Serverless",
+                    "LS_HTTP": "LS_HTTP",
+                    "LS_ADLS_OEA": "LS_DataLake"
+                }
+            )
+        )
+    )
+    print(poller.result())
