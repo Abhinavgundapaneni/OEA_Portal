@@ -5,7 +5,7 @@ from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.models import OEAInstance
 from azure.mgmt.synapse.models import BigDataPoolResourceInfo, AutoScaleProperties, AutoPauseProperties, LibraryRequirements,\
      NodeSizeFamily, NodeSize, BigDataPoolPatchInfo, ManagedIntegrationRuntime, IntegrationRuntimeComputeProperties, \
-        IntegrationRuntimeDataFlowProperties, DataFlowComputeType
+        IntegrationRuntimeDataFlowProperties, DataFlowComputeType, IntegrationRuntimeResource
 logger = logging.getLogger('SynapseManagementService')
 
 class SynapseManagementService:
@@ -38,13 +38,19 @@ class SynapseManagementService:
             resource_group_name=oea_instance.resource_group,
             workspace_name = oea_instance.workspace_name,
             integration_runtime_name = ir_dict['name'],
-            integration_runtime = {
-                "properties": {
-                    "description":"",
-                    "type":ir_dict['properties']['type']
-                }
-            }
-        )
+            integration_runtime = IntegrationRuntimeResource(
+                properties = ManagedIntegrationRuntime(
+                compute_properties=IntegrationRuntimeComputeProperties(
+                    location=ir_dict['properties']['typeProperties']['computeProperties']['location'],
+                    data_flow_properties=IntegrationRuntimeDataFlowProperties(
+                        additional_properties={},
+                        core_count=ir_dict['properties']['typeProperties']['computeProperties']['dataFlowProperties']['coreCount'],
+                        compute_type=DataFlowComputeType.GENERAL,
+                        time_to_live=ir_dict['properties']['typeProperties']['computeProperties']['dataFlowProperties']['timeToLive']
+                        )
+                    )
+                )
+            ))
         if(wait_till_completion):
             return poller.result() #AzureOperationPoller
         else:
