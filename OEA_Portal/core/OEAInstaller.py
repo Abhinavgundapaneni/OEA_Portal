@@ -5,7 +5,7 @@ import uuid
 import zipfile
 import urllib.request
 import secrets
-from models import OEAInstance
+from OEA_Portal.core.models import OEAInstance
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.services.AzureResourceProvisionService import AzureResourceProvisionService
 from OEA_Portal.core.services.SynapseManagementService import SynapseManagementService
