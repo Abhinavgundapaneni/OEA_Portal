@@ -38,17 +38,13 @@ class SynapseManagementService:
             resource_group_name=oea_instance.resource_group,
             workspace_name = oea_instance.workspace_name,
             integration_runtime_name = ir_dict['name'],
-            integration_runtime = ManagedIntegrationRuntime(
-                compute_properties=IntegrationRuntimeComputeProperties(
-                    location=ir_dict['properties']['typeProperties']['computeProperties']['location'],
-                    data_flow_properties=IntegrationRuntimeDataFlowProperties(
-                        core_count=ir_dict['properties']['typeProperties']['computeProperties']['dataFlowProperties']['coreCount'],
-                        compute_type=DataFlowComputeType.GENERAL,
-                        time_to_live=ir_dict['properties']['typeProperties']['computeProperties']['dataFlowProperties']['timeToLive']
-                        )
-                    )
-                )
-            )
+            integration_runtime = {
+                "properties": {
+                    "description":"",
+                    "type":ir_dict['properties']['type']
+                }
+            }
+        )
         if(wait_till_completion):
             return poller.result() #AzureOperationPoller
         else:

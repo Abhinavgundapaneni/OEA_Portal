@@ -5,12 +5,15 @@ import uuid
 import zipfile
 import urllib.request
 import secrets
+from models import OEAInstance
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.services.AzureResourceProvisionService import AzureResourceProvisionService
 from OEA_Portal.core.services.SynapseManagementService import SynapseManagementService
 import logging
 class OEAInstaller():
-    #todo: Add class description.
+    """
+    OEA Installer class which handles all tasks related to installing and uninstalling an OEA instance.
+    """
     def __init__(self, tenant_id, subscription_id, oea_suffix, oea_version='0.7', location='eastus', tags=None, include_groups=False):
         self.tenant_id = tenant_id
         self.subscription_id = subscription_id
@@ -50,6 +53,14 @@ class OEAInstaller():
         return f"/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/providers/Microsoft.Storage/storageAccounts/{self.storage_account_name}/blobServices/default/containers/{container}"
 
     def create_synapse_architecture(self, azure_resource_provision_service:AzureResourceProvisionService, synapse_management_service:SynapseManagementService):
+        """
+        Creates the Synapse infrastructure required for an OEA installation.
+        This includes;
+            1. Creating Synapse workspace.
+            2. Creating 'Storage Blob Data Contributor' Role assignment to the user.
+            3. Adding firewall rule.
+            3. Create 2 spark pools - spark3p2sm and spark3p2med
+        """
         self.synapse_workspace_object = azure_resource_provision_service.create_synapse_workspace(self.synapse_workspace_name, self.resource_group_name, self.storage_account_name)
         azure_resource_provision_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_object.id, self.synapse_workspace_object.identity.principal_id)
         synapse_management_service.add_firewall_rule_for_synapse('allowAll', '0.0.0.0', '255.255.255.255', self.synapse_workspace_name)
@@ -67,6 +78,9 @@ class OEAInstaller():
             )
 
     def create_aad_groups(self):
+        """
+        Create the AAD groups required for the OEA installation.
+        """
         #todo: Migrate this step to use Python SDK.
         os.system(f"az ad group create --display-name \"{self.global_admins_name}\" --mail-nickname 'EduAnalyticsGlobalAdmins'")
         os.system(f"az ad group owner add --group \"{self.global_admins_name}\" --owner-object-id {self.user_object_id}")
@@ -82,6 +96,9 @@ class OEAInstaller():
         self.external_data_scientists_id = os.popen(f"az ad group show --group \"{self.eds_group_name}\" --query id --output tsv").read()[:-1]
 
     def create_role_assignments_to_groups(self, provision_resource_service):
+        """
+        Create the role assignments to the different groups.
+        """
         provision_resource_service.create_role_assignment('Owner', f"/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/", self.global_admins_id)
         # Assign "Storage Blob Data Contributor" to security groups to allow users to query data via Synapse studio
         provision_resource_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_id, self.global_admins_id)
@@ -94,22 +111,31 @@ class OEAInstaller():
         provision_resource_service.create_role_assignment('Reader', self.storage_account_id, self.data_engineers_id)
 
     def download_and_extract_framework(self):
+        """
+        Download and extract the OEA framework ZIP file into file system.
+        """
         zip_path, _ = urllib.request.urlretrieve(self.framework_zip_url)
         with zipfile.ZipFile(zip_path, "r") as f:
             f.extractall(f"{BASE_DIR}/downloads")
 
-    def install(self, request_id=None):
-        if request_id is None:
-            request_id = uuid.uuid4()
+    def install(self):
+        """
+        Installs the OEA framework and all the required assets in the Azure Subscription.
+        As part of the Installation, the following steps are done:
+
+        1. Verify if the user has "owner" permissions on the Azure Subscription.
+        2. Create a resource group.
+        3. Create a storage account along with the required containers and directories.
+        4. Set up the Azure Synapse Analytics Architecture.
+        5. Create a keyvault and secret.
+        6. Create AAD groups and role assignments, if required.
+        7. Install the OEA framework artifacts in the Synapse workspace.
+        """
         self.download_and_extract_framework()
         azure_client = AzureClient(self.tenant_id, self.subscription_id, location=self.location, default_tags=self.tags)
         azure_resource_provision_service = AzureResourceProvisionService(azure_client)
         synapse_management_service = SynapseManagementService(azure_client, self.resource_group_name)
-        resource_config = {}
-        resource_config['keyvault'] = self.keyvault_name
-        resource_config['storage_account'] = self.storage_account_name
-        resource_config['resource_group'] = self.resource_group_name
-        resource_config['workspace'] = self.synapse_workspace_name
+        oea_instance = OEAInstance(self.synapse_workspace_name, self.resource_group_name, self.keyvault_name, self.storage_account_name)
         self.verify_permissions(azure_client, azure_resource_provision_service)
 
         azure_resource_provision_service.create_resource_group(self.resource_group_name)
@@ -135,12 +161,12 @@ class OEAInstaller():
         else:
             azure_resource_provision_service.create_role_assignment('Storage Blob Data Contributor', self.storage_account_id, self.user_object_id)
 
-        synapse_management_service.install_all_linked_services(resource_config, f'{self.framework_path_relative}/linkedService')
+        synapse_management_service.install_all_linked_services(oea_instance, f'{self.framework_path_relative}/linkedService')
 
-        synapse_management_service.install_all_datasets(resource_config, f'{self.framework_path_relative}/dataset')
+        synapse_management_service.install_all_datasets(oea_instance, f'{self.framework_path_relative}/dataset')
 
-        synapse_management_service.install_all_notebooks(resource_config, f'{self.framework_path_relative}/notebook', wait_till_completion=False)
+        synapse_management_service.install_all_notebooks(oea_instance, f'{self.framework_path_relative}/notebook', wait_till_completion=False)
 
-        synapse_management_service.install_all_dataflows(resource_config, f'{self.framework_path_relative}/dataflow', wait_till_completion=False)
+        synapse_management_service.install_all_dataflows(oea_instance, f'{self.framework_path_relative}/dataflow', wait_till_completion=False)
 
-        synapse_management_service.install_all_pipelines(resource_config, f'{self.framework_path_relative}/pipeline')
+        synapse_management_service.install_all_pipelines(oea_instance, f'{self.framework_path_relative}/pipeline')
