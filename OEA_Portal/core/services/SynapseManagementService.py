@@ -73,21 +73,25 @@ class SynapseManagementService:
         else:
             return poller
 
-    def create_notebook(self, notebook_filename, oea_instance:OEAInstance, wait_till_completion):
+    def create_or_update_notebook(self, oea_instance:OEAInstance, notebook_path=None, notebook_dict=None, wait_till_completion=None):
         """ Creates or updates the Notebook in the given Synapse studio.
             Expects the dataflow configuration file in JSON or ipynb format.
         """
+        if(notebook_path is None and notebook_dict is None):
+            raise Exception("You must pass 'notebook_dict' or 'notebook_path' to create a dataflow.")
         artifacts_client = self.azure_client.get_artifacts_client(oea_instance.workspace_name)
-        with open(notebook_filename) as f:
-            if(notebook_filename.split('.')[-1] == 'json'):
-                notebook_dict = json.loads(self.replace_strings(f.read(), oea_instance))
-                notebook_name = notebook_dict['name']
-            elif(notebook_filename.split('.')[-1] == 'ipynb'):
-                properties = json.loads(self.replace_strings(f.read(), oea_instance))
-                notebook_name = notebook_filename.split('/')[-1].split('.')[0]
-                notebook_dict = {"name": notebook_name, "properties": properties}
-            else:
-                raise ValueError('Notebook format not supported.')
+        if(notebook_dict is None):
+            with open(notebook_path) as f:
+                if(notebook_path.split('.')[-1] == 'json'):
+                    notebook_dict = json.loads(self.replace_strings(f.read(), oea_instance))
+                    notebook_name = notebook_dict['name']
+                elif(notebook_path.split('.')[-1] == 'ipynb'):
+                    properties = json.loads(self.replace_strings(f.read(), oea_instance))
+                    notebook_name = notebook_path.split('/')[-1].split('.')[0]
+                    notebook_dict = {"name": notebook_name, "properties": properties}
+                else:
+                    raise ValueError('Notebook format not supported.')
+
         self.validate_notebook_json(notebook_dict)
         logger.info(f"Creating notebook: {notebook_name}")
         poller = artifacts_client.notebook.begin_create_or_update_notebook(notebook_name, notebook_dict)
@@ -313,7 +317,7 @@ class SynapseManagementService:
                 notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    self.create_notebook(f"{root_path}/{notebook}", oea_instance, wait_till_completion)
+                    self.create_or_update_notebook(oea_instance, notebook_path=f"{root_path}/{notebook}", wait_till_completion=wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
