@@ -6,7 +6,7 @@ from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from OEA_Portal.core.services.utils import *
 from OEA_Portal.core.services.SynapseManagementService import SynapseManagementService
-from OEA_Portal.core.services.AssetManagementService.operations import temp
+from OEA_Portal.core.services.AssetManagementService.operations import parse_deployment_template_and_install_artifacts
 from django.views.generic.list import ListView
 from django.views.generic import TemplateView
 from django.shortcuts import redirect
@@ -83,8 +83,8 @@ class ProfileView(TemplateView):
 
     def get(self, *args, **kwargs):
         azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
-        sms = SynapseManagementService(azure_client, 'rg-oea-abhinav4')
-        temp(sms)
+        # sms = SynapseManagementService(azure_client, 'rg-oea-abhinav4')
+        parse_deployment_template_and_install_artifacts(f"{BASE_DIR}/downloads/temp.json", azure_client)
 
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')

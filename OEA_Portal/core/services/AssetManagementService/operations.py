@@ -67,9 +67,3 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
             properties=dataset["properties"]
         )
         poller.result()
-
-
-
-def temp(sms:SynapseManagementService):
-    oea = OEAInstance('syn-oea-abhinav4', 'rg-oea-abhinav4', 'kv-oea-abhinav4', 'stoeaabhinav4')
-    sms.create_dataset_sdk(oea, f"{BASE_DIR}/downloads/module/module_edfi_v0.2/dataset/DS_JSON.json", True)
