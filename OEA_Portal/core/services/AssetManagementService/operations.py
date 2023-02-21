@@ -57,7 +57,7 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
     parameters = template_json["parameters"]
     sms = SynapseManagementService(azure_client, 'rg-oea-abhinav4')
     for param in list(parameters.keys())[1:]:
-        template_str = template_str.replace(f"[parameters('{param}')]")
+        template_str = template_str.replace(f"[parameters('{param}')]", param)
     template_json = json.loads(template_str)
     datasets = [resource for resource in template_json["resources"] if resource["type"] == "Microsoft.Synapse/workspaces/datasets" ]
     for dataset in datasets:
