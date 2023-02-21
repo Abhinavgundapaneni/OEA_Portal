@@ -77,4 +77,4 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
         elif resource["type"] == "Microsoft.Synapse/workspaces/notebooks":
             notebook_name = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
             resource["name"] = notebook_name
-            sms.create_notebook(target_oea_instance, notebook_dict=resource, wait_till_completion=True)
+            sms.create_or_update_notebook(target_oea_instance, notebook_dict=resource, wait_till_completion=True)
