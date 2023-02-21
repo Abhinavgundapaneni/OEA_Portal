@@ -50,10 +50,11 @@ def deploy_template_to_resource_group(azure_client:AzureClient):
     )
     print(poller.result())
 
-def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:AzureClient):
+def parse_deployment_template_and_install_artifacts(file_path:str, azure_client):
     with open(file_path) as f:
-        template_json = json.loads(f.read())
         template_str = f.read()
+        template_json = json.loads(template_str)
+
     parameters = template_json["parameters"]
     sms = SynapseManagementService(azure_client, 'rg-oea-abhinav4')
     for param in list(parameters.keys())[1:]:

@@ -82,9 +82,9 @@ class ProfileView(TemplateView):
         return context
 
     def get(self, *args, **kwargs):
-        azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
+        # azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
         # sms = SynapseManagementService(azure_client, 'rg-oea-abhinav4')
-        parse_deployment_template_and_install_artifacts(f"{BASE_DIR}/downloads/temp.json", azure_client)
+        parse_deployment_template_and_install_artifacts(f"{BASE_DIR}/downloads/temp.json", '')
 
     def post(self, *args, **kwargs):
         tenant_id = self.request.POST.get('tenant_id')
