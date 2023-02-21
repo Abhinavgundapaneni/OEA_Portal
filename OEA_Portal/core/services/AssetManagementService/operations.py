@@ -63,7 +63,6 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
     target_oea_isntance = OEAInstance('syn-oea-abhinav4', 'rg-oea-abhinav4', 'kv-oea-abhinav4', 'stoeaabhinav4')
     template_json = json.loads(template_str)
 
-    datasets = [resource for resource in   ]
     for resource in template_json["resources"]:
         if resource["type"] == "Microsoft.Synapse/workspaces/datasets":
             dataset_name = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
