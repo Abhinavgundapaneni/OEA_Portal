@@ -35,9 +35,9 @@ def get_installed_assets_in_workspace(workspace_name, azure_client:AzureClient):
 def deploy_template_to_resource_group(azure_client:AzureClient):
     with open(f"{BASE_DIR}/downloads/temp.json") as f : template_json = json.load(f)
     with open(f"{BASE_DIR}/downloads/parameters.json") as f : param_json = json.load(f)
-    poller = azure_client.get_resource_client().deployments.begin_validate(
+    poller = azure_client.get_resource_client().deployments.begin_what_if(
         resource_group_name='rg-oea-abhinav4',
-        deployment_name='deployment-002',
+        deployment_name='deployment-003',
         parameters=Deployment(
             properties=DeploymentProperties(
                 mode='Incremental',
