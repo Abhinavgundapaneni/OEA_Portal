@@ -103,23 +103,15 @@ class SynapseManagementService:
 
         os.system(f"az synapse linked-service create --workspace-name {oea_instance.workspace_name} --name {linked_service_name} --file @{file_path} -o none")
 
-    def create_dataset(self, oea_instance:OEAInstance, dataset_name, file_path, wait_till_completion):
-        """ Creates a dataset in the Synapse studio.
-            Expects a dataset configuration file in JSON format
-        """
-        # todo: modify this to use Python SDK
-        with open(file_path, 'r') as f: data = self.replace_strings(f.read(), oea_instance)
-        with open(file_path, 'wt') as f: f.write(data)
-
-        os.system(f"az synapse dataset create --workspace-name {oea_instance.workspace_name} --name {dataset_name} --file @{file_path} -o none")
-
-    def create_dataset_sdk(self, oea_instance:OEAInstance, file_path, wait_till_completion):
+    def create_dataset(self, oea_instance:OEAInstance, file_path, wait_till_completion):
         with open(file_path) as f: dataset_json = json.loads(f.read())
         poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).dataset.begin_create_or_update_dataset(
             dataset_name=dataset_json["name"],
             properties=dataset_json["properties"]
         )
-        print(poller.result())
+        if wait_till_completion:
+            return poller.result()
+        return poller
 
     def add_firewall_rule_for_synapse(self, rule_name, start_ip_address, end_ip_address, synapse_workspace_name):
         """ Create a Firewall rule for the Azure Synapse Studio """

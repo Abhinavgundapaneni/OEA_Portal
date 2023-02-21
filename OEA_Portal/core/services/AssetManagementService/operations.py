@@ -61,7 +61,13 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
     template_json = json.loads(template_str)
     datasets = [resource for resource in template_json["resources"] if resource["type"] == "Microsoft.Synapse/workspaces/datasets" ]
     for dataset in datasets:
-        dataset["name"] = re.sub('[^a-zA-Z0-9_]', '', dataset["name"].split(".")[-1])
+        dataset_name = re.sub('[^a-zA-Z0-9_]', '', dataset["name"].split(".")[-1])
+        poller = azure_client.get_artifacts_client('syn-oea-abhinav4').dataset.begin_create_or_update_dataset(
+            dataset_name=dataset_name,
+            properties=dataset["properties"]
+        )
+        poller.result()
+
 
 
 def temp(sms:SynapseManagementService):
