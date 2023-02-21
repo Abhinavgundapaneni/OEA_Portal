@@ -114,7 +114,7 @@ class SynapseManagementService:
         os.system(f"az synapse dataset create --workspace-name {oea_instance.workspace_name} --name {dataset_name} --file @{file_path} -o none")
 
     def create_dataset_sdk(self, oea_instance:OEAInstance, file_path, wait_till_completion):
-        with open(file_path) as f: dataset_json = json.loads(f)
+        with open(file_path) as f: dataset_json = json.loads(f.read())
         poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).dataset.begin_create_or_update_dataset(
             dataset_name=dataset_json["name"],
             properties=dataset_json["properties"]
