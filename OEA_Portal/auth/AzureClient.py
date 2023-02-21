@@ -64,7 +64,7 @@ class AzureClient:
         if not self.synapse_client: self.synapse_client = SynapseManagementClient(self.credential, self.subscription_id)
         return self.synapse_client
 
-    def get_artifacts_client(self, synapse_workspace_name):
+    def get_artifacts_client(self, synapse_workspace_name) -> ArtifactsClient:
         if not synapse_workspace_name in self.artifacts_client:
             self.artifacts_client[synapse_workspace_name] = ArtifactsClient(self.credential, f"https://{synapse_workspace_name}.dev.azuresynapse.net")
         return self.artifacts_client[synapse_workspace_name]

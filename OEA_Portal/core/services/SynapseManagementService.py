@@ -3,6 +3,7 @@ import json
 import logging
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.models import OEAInstance
+from azure.synapse.artifacts.models import Dataset
 from azure.mgmt.synapse.models import BigDataPoolResourceInfo, AutoScaleProperties, AutoPauseProperties, LibraryRequirements,\
      NodeSizeFamily, NodeSize, BigDataPoolPatchInfo, ManagedIntegrationRuntime, IntegrationRuntimeComputeProperties, \
         IntegrationRuntimeDataFlowProperties, DataFlowComputeType, IntegrationRuntimeResource
@@ -111,6 +112,14 @@ class SynapseManagementService:
         with open(file_path, 'wt') as f: f.write(data)
 
         os.system(f"az synapse dataset create --workspace-name {oea_instance.workspace_name} --name {dataset_name} --file @{file_path} -o none")
+
+    def create_dataset_sdk(self, oea_instance:OEAInstance, file_path, wait_till_completion):
+        with open(file_path) as f: dataset_json = json.loads(f)
+        poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).dataset.begin_create_or_update_dataset(
+            dataset_name=dataset_json["name"],
+            properties=dataset_json["properties"]
+        )
+        print(poller.result())
 
     def add_firewall_rule_for_synapse(self, rule_name, start_ip_address, end_ip_address, synapse_workspace_name):
         """ Create a Firewall rule for the Azure Synapse Studio """
