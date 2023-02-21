@@ -91,9 +91,10 @@ class SynapseManagementService:
                     notebook_dict = {"name": notebook_name, "properties": properties}
                 else:
                     raise ValueError('Notebook format not supported.')
+        else:
+            notebook_name = notebook_dict["name"]
 
         self.validate_notebook_json(notebook_dict)
-        logger.info(f"Creating notebook: {notebook_name}")
         poller = artifacts_client.notebook.begin_create_or_update_notebook(notebook_name, notebook_dict)
         if(wait_till_completion):
             return poller.result() #AzureOperationPoller
