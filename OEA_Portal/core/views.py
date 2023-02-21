@@ -5,6 +5,7 @@ from OEA_Portal.core.services.AssetManagementService.operations import *
 from OEA_Portal.auth.AzureClient import AzureClient
 from django.http.response import HttpResponse
 from OEA_Portal.core.services.utils import *
+from OEA_Portal.core.services.SynapseManagementService import SynapseManagementService
 from OEA_Portal.core.services.AssetManagementService.operations import temp
 from django.views.generic.list import ListView
 from django.views.generic import TemplateView
