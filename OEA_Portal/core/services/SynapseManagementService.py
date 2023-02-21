@@ -110,10 +110,10 @@ class SynapseManagementService:
         if(dataset_dict is None and dataset_path is None):
             raise Exception("You must pass 'dataset_dict' or 'dataset_path' to create a dataset.")
         if(dataset_dict is None):
-            with open(dataset_path) as f: dataset_json = json.loads(f.read())
+            with open(dataset_path) as f: dataset_dict = json.loads(f.read())
         poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).dataset.begin_create_or_update_dataset(
-            dataset_name=dataset_json["name"],
-            properties=dataset_json["properties"]
+            dataset_name=dataset_dict["name"],
+            properties=dataset_dict["properties"]
         )
         if wait_till_completion:
             return poller.result()
