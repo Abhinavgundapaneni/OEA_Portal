@@ -1,5 +1,5 @@
 from OEA_Portal.settings import OEA_ASSET_TYPES, BASE_DIR
-from .. import SynapseManagementService
+from ..SynapseManagementService import SynapseManagementService
 from ..utils import get_blob_contents, get_storage_account_from_url, download_and_extract_zip_from_url
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.models import OEAInstalledAsset, OEAInstance
