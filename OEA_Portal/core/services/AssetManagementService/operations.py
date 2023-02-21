@@ -59,13 +59,21 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
     sms = SynapseManagementService(azure_client, 'rg-oea-abhinav4')
     for param in list(parameters.keys())[1:]:
         template_str = template_str.replace(f"[parameters('{param}')]", param)
-    print(template_str)
+    # todo: Figure out how to get target OEA instance.
+    target_oea_isntance = OEAInstance('syn-oea-abhinav4', 'rg-oea-abhinav4', 'kv-oea-abhinav4', 'stoeaabhinav4')
     template_json = json.loads(template_str)
-    datasets = [resource for resource in template_json["resources"] if resource["type"] == "Microsoft.Synapse/workspaces/datasets" ]
-    for dataset in datasets:
-        dataset_name = re.sub('[^a-zA-Z0-9_]', '', dataset["name"].split(",")[-1])
-        poller = azure_client.get_artifacts_client('syn-oea-abhinav4').dataset.begin_create_or_update_dataset(
-            dataset_name=dataset_name,
-            properties=dataset["properties"]
-        )
-        poller.result()
+
+    datasets = [resource for resource in   ]
+    for resource in template_json["resources"]:
+        if resource["type"] == "Microsoft.Synapse/workspaces/datasets":
+            dataset_name = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
+            resource["name"] = dataset_name
+            sms.create_or_update_dataset(target_oea_isntance, dataset_dict=resource, wait_till_completion=True)
+
+    for resource in template_json["resources"]:
+        if resource["type"] == "Microsoft.Synapse/workspaces/dataflows":
+            dataflow_name = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
+            resource["name"] = dataflow_name
+            sms.create_or_update_dataflow(target_oea_isntance, dataflow_dict=resource, wait_till_completion=True)
+        elif resource["type"] == "Microsoft.Synapse/workspaces/notebooks":
+            pass

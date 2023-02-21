@@ -59,11 +59,14 @@ class SynapseManagementService:
         else:
             return poller
 
-    def create_or_update_dataflow(self, oea_instance:OEAInstance, dataflow_file_path, wait_till_completion):
+    def create_or_update_dataflow(self, oea_instance:OEAInstance, dataflow_file_path=None, dataflow_dict=None, wait_till_completion=None):
         """ Creates or updates the Dataflow in the given Synapse studio.
             Expects the dataflow configuration file in JSON format.
         """
-        with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read(), oea_instance))
+        if(dataflow_dict is None and dataflow_file_path is None):
+            raise Exception("You must pass 'dataflow_file_path' or 'dataflow_dict' to create a dataflow.")
+        if(dataflow_dict is None):
+            with open(dataflow_file_path) as f: dataflow_dict = json.loads(self.replace_strings(f.read(), oea_instance))
         poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).data_flow.begin_create_or_update_data_flow(dataflow_dict['name'], dataflow_dict['properties'])
         if(wait_till_completion):
             return poller.result() #AzureOperationPoller
@@ -103,8 +106,11 @@ class SynapseManagementService:
 
         os.system(f"az synapse linked-service create --workspace-name {oea_instance.workspace_name} --name {linked_service_name} --file @{file_path} -o none")
 
-    def create_dataset(self, oea_instance:OEAInstance, file_path, wait_till_completion):
-        with open(file_path) as f: dataset_json = json.loads(f.read())
+    def create_or_update_dataset(self, oea_instance:OEAInstance, dataset_path=None, dataset_dict=None, wait_till_completion=None):
+        if(dataset_dict is None and dataset_path is None):
+            raise Exception("You must pass 'dataset_dict' or 'dataset_path' to create a dataset.")
+        if(dataset_dict is None):
+            with open(dataset_path) as f: dataset_json = json.loads(f.read())
         poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).dataset.begin_create_or_update_dataset(
             dataset_name=dataset_json["name"],
             properties=dataset_json["properties"]
@@ -255,7 +261,7 @@ class SynapseManagementService:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    self.create_dataset(oea_instance, dataset.split('.')[0], f'{root_path}/{dataset}', wait_till_completion)
+                    self.create_or_update_dataset(oea_instance, dataset_path=f'{root_path}/{dataset}', wait_till_completion=wait_till_completion)
                 except Exception as e:
                         #todo: Handle the error
                         raise Exception(str(e))
@@ -273,7 +279,7 @@ class SynapseManagementService:
                 dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    self.create_or_update_dataflow(oea_instance, f'{root_path}/{dataflow}', wait_till_completion)
+                    self.create_or_update_dataflow(oea_instance, dataflow_file_path=f'{root_path}/{dataflow}',wait_till_completion=wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
