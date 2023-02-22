@@ -64,17 +64,16 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
     template_json = json.loads(template_str)
 
     for resource in template_json["resources"]:
+        resource["name"] = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
         if resource["type"] == "Microsoft.Synapse/workspaces/datasets":
-            dataset_name = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
-            resource["name"] = dataset_name
             sms.create_or_update_dataset(target_oea_instance, dataset_dict=resource, wait_till_completion=True)
 
     for resource in template_json["resources"]:
         if resource["type"] == "Microsoft.Synapse/workspaces/dataflows":
-            dataflow_name = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
-            resource["name"] = dataflow_name
             sms.create_or_update_dataflow(target_oea_instance, dataflow_dict=resource, wait_till_completion=True)
         elif resource["type"] == "Microsoft.Synapse/workspaces/notebooks":
-            notebook_name = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
-            resource["name"] = notebook_name
             sms.create_or_update_notebook(target_oea_instance, notebook_dict=resource, wait_till_completion=True)
+
+    for resource in template_json["resources"]:
+        if resource["type"] == "Microsoft.Synapse/workspaces/pipelines":
+            sms.create_or_update_pipeline()

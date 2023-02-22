@@ -20,11 +20,16 @@ class SynapseManagementService:
                         .replace('yoursynapseworkspace', oea_instance.workspace_name)
         return data
 
-    def create_or_update_pipeline(self, oea_instance:OEAInstance, pipeline_file_path, pipeline_name, wait_till_completion):
+    def create_or_update_pipeline(self, oea_instance:OEAInstance, pipeline_file_path=None, pipeline_dict=None, wait_till_completion=None):
         """ Creates or updates the Pipeline in the given Synapse studio.
             Expects the pipeline configuration file in JSON format.
         """
-        with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read(), oea_instance))
+        if(pipeline_dict is None and pipeline_file_path is None):
+            raise Exception("You must pass either 'pipeline_dict' or 'pipeline_file_path' parameters to create a pipeline.")
+
+        if(pipeline_dict is None):
+            pipeline_name = (pipeline_file_path.split('/')[-1]).split('.')[0]
+            with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read(), oea_instance))
         if '$schema' not in pipeline_dict.keys():
             poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
             if(wait_till_completion):
@@ -335,7 +340,7 @@ class SynapseManagementService:
                 pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    self.create_or_update_pipeline(oea_instance, f'{root_path}/{pipeline}', pipeline.split('.')[0], wait_till_completion)
+                    self.create_or_update_pipeline(oea_instance, pipeline_file_path=f'{root_path}/{pipeline}',wait_till_completion=wait_till_completion)
                 except Exception as e:
                     raise Exception(str(e))
 
