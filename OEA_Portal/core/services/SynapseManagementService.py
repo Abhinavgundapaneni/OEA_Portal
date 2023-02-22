@@ -30,6 +30,8 @@ class SynapseManagementService:
         if(pipeline_dict is None):
             pipeline_name = (pipeline_file_path.split('/')[-1]).split('.')[0]
             with open(pipeline_file_path) as f: pipeline_dict = json.loads(self.replace_strings(f.read(), oea_instance))
+        else:
+            pipeline_name = pipeline_dict["name"]
         if '$schema' not in pipeline_dict.keys():
             poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).pipeline.begin_create_or_update_pipeline(pipeline_name, pipeline_dict)
             if(wait_till_completion):
