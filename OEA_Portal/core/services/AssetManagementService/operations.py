@@ -76,4 +76,5 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
 
     for resource in template_json["resources"]:
         if resource["type"] == "Microsoft.Synapse/workspaces/pipelines":
-            sms.create_or_update_pipeline(target_oea_instance, pipeline_dict=resource, wait_till_completion=True)
+            poller = sms.create_or_update_pipeline(target_oea_instance, pipeline_dict=resource, wait_till_completion=True)
+            print(poller.result())
