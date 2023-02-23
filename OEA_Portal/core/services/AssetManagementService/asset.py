@@ -4,6 +4,7 @@ from OEA_Portal.settings import OEA_ASSET_TYPES, BASE_DIR
 from OEA_Portal.core.models import OEAInstance
 from ..SynapseManagementService import SynapseManagementService
 from OEA_Portal.auth.AzureClient import AzureClient
+from .operations import create_dependency_matrix_by_reading_all_files, create_pipeline_dependency_order
 from ..utils import download_and_extract_zip_from_url
 
 class BaseOEAAsset:
@@ -32,8 +33,8 @@ class BaseOEAAsset:
 
         self.asset_url = f"https://github.com/microsoft/OpenEduAnalytics/releases/download/{asset_type}_{release_keyword}_v{version}/{asset_type}_{release_keyword}_v{version}.zip"
         download_and_extract_zip_from_url(self.asset_url, self.local_asset_download_path)
-        self.dependency_dict = self.create_dependency_matrix()
-        self.pipelines_dependency_order = self.create_pipeline_dependency_order()
+        self.dependency_dict = create_dependency_matrix_by_reading_all_files(f"{self.local_asset_root_path}/pipeline")
+        self.pipelines_dependency_order = create_pipeline_dependency_order(self.dependency_dict)
 
     def dfs(self, table_name, visited, dependency_dict, dependency_order):
         """

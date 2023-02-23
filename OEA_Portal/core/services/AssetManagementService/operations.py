@@ -33,6 +33,86 @@ def get_installed_assets_in_workspace(workspace_name, azure_client:AzureClient):
     schemas = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['Schemas']]
     return modules, packages, schemas, data['OEA_Version']
 
+def dfs(table_name, visited, dependency_dict, dependency_order):
+    """
+    Does a Depth First Search on the dependency matrix.
+    """
+    visited[table_name] = True
+    if dependency_dict[table_name] == []:
+        dependency_order.append(table_name)
+        return
+    for dependent_table in dependency_dict[table_name]:
+        if(visited[dependent_table] is False):
+            dfs(dependent_table, visited, dependency_dict, dependency_order)
+        if(visited[dependent_table] is False):
+            dependency_order.append(dependent_table)
+    dependency_order.append(table_name)
+
+def create_pipeline_dependency_order(dependency_dict):
+    """
+    Returns a topological sorted list of pipelines where for any pipeline at index n is not
+    dependent of the pipelines from index greater than n.
+    """
+    visited = {}
+    dependency_order = []
+    pipelines = list(dependency_dict.keys())
+    for pipeline in pipelines:
+        pipeline_name = pipeline.split('.')[0] if '.' in pipeline else pipeline
+        visited[pipeline_name] = False
+    for pipeline in pipelines:
+        pipeline_name = pipeline.split('.')[0] if '.' in pipeline else pipeline
+        if(visited[pipeline_name] is False):
+            dfs(pipeline_name, visited, dependency_dict, dependency_order)
+    return dependency_order
+
+def create_dependency_matrix_by_reading_all_files(pipeline_root_path):
+    """
+    Reads through all the pipeline files and returns a dependency matrix.
+    It returns a where a pipeline name is a key and a list containing all the dependent pipelines as value
+    """
+    files = os.listdir(pipeline_root_path)
+    dependency_dict = {}
+    for file in files:
+        if '.json' in file:
+            key = file.split('.')[0]
+            dependency_dict[key] = []
+            with open(f"{pipeline_root_path}/{file}") as f:
+                file_json = json.load(f)
+            for x in get_values_from_json(file_json, 'pipeline'):
+                dependency_dict[key].append(x['referenceName'])
+    return dependency_dict
+
+def create_dependency_matrix_by_reading_template(template_file=None, template_json=None):
+    """
+    Reads a pipelines template JSON file and creates a dependency matrix over all the pipelines.
+    """
+    if template_file is None and template_json is None:
+        raise Exception("You must pass 'template_file' or 'template_json' parameters.")
+    if template_json is None:
+        with open(template_file) as f: template_json = json.loads(f.read())
+    dependency_dict = {}
+    for resource in template_json["resources"]:
+        if resource["type"] == "Microsoft.Synapse/workspaces/pipelines":
+            resource["name"] = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
+            dependency_dict[resource["name"]] = []
+            for x in get_values_from_json(resource, 'pipeline'):
+                dependency_dict[resource["name"]].append(x['referenceName'])
+    return dependency_dict
+
+
+def get_values_from_json(file_json, target_field):
+    for k,v in file_json.items():
+        if k == target_field:
+            yield v
+        elif isinstance(v, dict):
+            for item in get_values_from_json(v, target_field):
+                yield item
+        elif isinstance(v, list):
+            for x in v:
+                if isinstance(x, dict):
+                    for item in get_values_from_json(x, target_field):
+                        yield item
+
 #todo: Tried to using deployments to install pipeline. Delete if not working.
 def deploy_template_to_resource_group(azure_client:AzureClient):
     with open(f"{BASE_DIR}/downloads/temp.json") as f : template_json = json.load(f)
@@ -63,18 +143,23 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
     target_oea_instance = OEAInstance('syn-oea-abhinav4', 'rg-oea-abhinav4', 'kv-oea-abhinav4', 'stoeaabhinav4')
     template_json = json.loads(template_str)
 
+    pipeline_config_json = {}
+
     for resource in template_json["resources"]:
         resource["name"] = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
+        if resource["type"] == "Microsoft.Synapse/workspaces/pipelines":
+            pipeline_config_json[resource["name"]] = resource
         if resource["type"] == "Microsoft.Synapse/workspaces/datasets":
-            sms.create_or_update_dataset(target_oea_instance, dataset_dict=resource, wait_till_completion=True)
+            ds = sms.create_or_update_dataset(target_oea_instance, dataset_dict=resource, wait_till_completion=True)
 
     for resource in template_json["resources"]:
         if resource["type"] == "Microsoft.Synapse/workspaces/dataflows":
-            sms.create_or_update_dataflow(target_oea_instance, dataflow_dict=resource, wait_till_completion=True)
+            df = sms.create_or_update_dataflow(target_oea_instance, dataflow_dict=resource, wait_till_completion=True)
         elif resource["type"] == "Microsoft.Synapse/workspaces/notebooks":
-            sms.create_or_update_notebook(target_oea_instance, notebook_dict=resource, wait_till_completion=True)
+            nb = sms.create_or_update_notebook(target_oea_instance, notebook_dict=resource, wait_till_completion=True)
 
-    for resource in template_json["resources"]:
-        if resource["type"] == "Microsoft.Synapse/workspaces/pipelines":
-            poller = sms.create_or_update_pipeline(target_oea_instance, pipeline_dict=resource, wait_till_completion=True)
-            print(poller)
+    dependency_dict = create_dependency_matrix_by_reading_template(template_json=template_json)
+    pipeline_dependency_order = create_pipeline_dependency_order(dependency_dict)
+
+    for pipeline in pipeline_dependency_order:
+        pl = sms.create_or_update_pipeline(target_oea_instance, pipeline_dict=pipeline_config_json[pipeline], wait_till_completion=True)
