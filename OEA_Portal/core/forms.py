@@ -33,10 +33,14 @@ class InstallationForm(forms.Form):
     location = forms.CharField(max_length=15)
     include_groups = forms.BooleanField(required=False, label='Include Groups')
 
-class ProfileForm(forms.Form):
-    tenant_id = forms.CharField(max_length=50)
-    subscription_id = forms.CharField(max_length=50)
-
+class AssetInstallationForm(forms.Form):
+    asset_name = forms.CharField(max_length=50)
+    asset_type = forms.ChoiceField(choices=(
+        ("module", "module"),
+        ("package", "package"),
+        ("schema", "schema")
+    ), required=True)
+    asset_version = forms.CharField(max_length=5)
 class ColumnMetadata(forms.Form):
     column_name = forms.CharField(max_length=100)
     column_type = forms.ChoiceField(choices=TYPES)

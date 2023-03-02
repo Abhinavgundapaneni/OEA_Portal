@@ -12,16 +12,14 @@ class BaseOEAAsset:
     """
     A BaseOEAAsset class represents an OEA Asset - module, package or schema.
     """
-    def __init__(self, asset_name:str, release_keyword:str, version:str, supported_oea_versions:list, asset_type:str):
+    def __init__(self, asset_name:str, asset_name:str, version:str, asset_type:str):
         if(asset_type not in OEA_ASSET_TYPES):
             raise Exception(f"{asset_type} is not an OEA supported Asset type.")
-        self.asset_display_name = asset_name
+        self.asset_name = asset_name
         self.version = version
-        self.supported_oea_versions = supported_oea_versions
         self.asset_type = asset_type
-        self.release_keyword = release_keyword
         self.local_asset_download_path = f"{BASE_DIR}/downloads/{asset_type}"
-        self.local_asset_root_path =f"{BASE_DIR}/downloads/{asset_type}/{self.asset_type}_{self.release_keyword}_v{self.version}"
+        self.local_asset_root_path =f"{BASE_DIR}/downloads/{asset_type}/{self.asset_type}_{self.asset_name}_v{self.version}"
 
         # Synapse Artifacts associated with the Asset.
         self.pipelines = list(filter( lambda x: '.md' not in x, os.listdir(f"{self.local_asset_root_path}/pipeline"))) if os.path.isdir(f"{self.local_asset_root_path}/pipeline") else []
@@ -32,7 +30,7 @@ class BaseOEAAsset:
         self.integration_runtimes = list(filter( lambda x: '.md' not in x, os.listdir(f"{self.local_asset_root_path}/integrationRuntime"))) if os.path.isdir(f"{self.local_asset_root_path}/integrationRuntime") else []
         self.sql_scripts = list(filter( lambda x: '.md' not in x, os.listdir(f"{self.local_asset_root_path}/sqlScript"))) if os.path.isdir(f"{self.local_asset_root_path}/sqlScript") else []
 
-        self.asset_url = f"https://github.com/microsoft/OpenEduAnalytics/releases/download/{asset_type}_{release_keyword}_v{version}/{asset_type}_{release_keyword}_v{version}.zip"
+        self.asset_url = f"https://github.com/microsoft/OpenEduAnalytics/releases/download/{asset_type}_{asset_name}_v{version}/{asset_type}_{asset_name}_v{version}.zip"
         #todo: Check If exists before downloading.
         # download_and_extract_zip_from_url(self.asset_url, self.local_asset_download_path)
         self.dependency_dict = create_dependency_matrix_by_reading_all_files(f"{self.local_asset_root_path}/pipeline")
