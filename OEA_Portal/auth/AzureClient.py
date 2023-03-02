@@ -5,7 +5,7 @@ from azure.storage.filedatalake import DataLakeServiceClient
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.subscription import SubscriptionClient
 from azure.mgmt.resource import ResourceManagementClient
-from azure.storage.blob import BlobClient
+from azure.storage.blob import BlobClient, BlobServiceClient
 from azure.mgmt.keyvault import KeyVaultManagementClient
 from azure.mgmt.synapse import SynapseManagementClient
 from azure.synapse.artifacts import ArtifactsClient
@@ -27,6 +27,7 @@ class AzureClient:
         self.resource_client = None
         self.graph_rbac_client = None
         self.secret_client = None
+        self.blob_service_client = None
         self.authorization_client = None
         self.blob_client = None
         self.storage_client = None
@@ -72,6 +73,10 @@ class AzureClient:
     def get_blob_client(self, storage_account_name, container_name, blob_name):
         if not self.blob_client: self.blob_client = BlobClient(account_url=f"https://{storage_account_name}.dfs.core.windows.net", container_name=container_name, blob_name=blob_name, credential=self.credential)
         return self.blob_client
+
+    def get_blob_service_client(self, storage_account_name, credential):
+        if not self.blob_service_client: self.blob_service_client = BlobServiceClient(account_url=f"https://{storage_account_name}.dfs.core.windows.net", credential=credential)
+        return self.blob_service_client
 
     def get_subscription_client(self):
         if not self.subscription_client: self.subscription_client = SubscriptionClient(self.credential)

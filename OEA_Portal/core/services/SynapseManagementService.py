@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import time
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.models import OEAInstance
 from azure.synapse.artifacts.models import Dataset
@@ -107,15 +108,25 @@ class SynapseManagementService:
         else:
             return poller
 
-    def create_linked_service(self, oea_instance:OEAInstance, linked_service_name, file_path, wait_till_completion):
+    def create_linked_service(self, oea_instance:OEAInstance, linked_service_dict=None, linked_service_path=None, wait_till_completion=None):
         """ Creates a linked service in the Synapse studio.
             Expects a linked service configuration file in JSON format
         """
         # todo: modify this to use Python SDK
-        with open(file_path, 'r') as f: data = self.replace_strings(f.read(), oea_instance)
-        with open(file_path, 'wt') as f: f.write(data)
+        if(linked_service_dict is None and linked_service_path is None):
+            raise Exception("You must pass 'linked_service_dict' or 'linked_service_path' to create a dataflow.")
+        if(linked_service_dict is None):
+            with open(linked_service_path) as f: linked_service_dict = json.loads(self.replace_strings(f.read(), oea_instance))
+        poller = self.azure_client.get_artifacts_client(oea_instance.workspace_name).linked_service.begin_create_or_update_linked_service(linked_service_dict['name'], linked_service_dict['properties'])
+        if(wait_till_completion):
+            return poller.result() #AzureOperationPoller
+        else:
+            return poller
 
-        os.system(f"az synapse linked-service create --workspace-name {oea_instance.workspace_name} --name {linked_service_name} --file @{file_path} -o none")
+        # with open(file_path, 'r') as f: data = self.replace_strings(f.read(), oea_instance)
+        # with open(file_path, 'wt') as f: f.write(data)
+
+        # os.system(f"az synapse linked-service create --workspace-name {oea_instance.workspace_name} --name {linked_service_name} --file @{file_path} -o none")
 
     def create_or_update_dataset(self, oea_instance:OEAInstance, dataset_path=None, dataset_dict=None, wait_till_completion=None):
         if(dataset_dict is None and dataset_path is None):
@@ -219,8 +230,10 @@ class SynapseManagementService:
             poller = self.azure_client.get_artifacts_client(workspace_name).pipeline.begin_delete_pipeline(pipeline)
         except:
             raise Exception(f'Error while deleting pipeline - {pipeline}')
-        if(wait_till_completion):
-            return poller.result()
+        while(poller.status() == 'InProgress'):
+            time.sleep(2)
+
+        print(poller)
         return poller
 
     def delete_linked_service(self, workspace_name, linked_service, wait_till_completion):
@@ -259,6 +272,22 @@ class SynapseManagementService:
             return poller.result()
         return poller
 
+    def delete_integration_runtime(self, resource_group, workspace_name, integration_runtime, wait_till_completion):
+        """
+        Deletes given dataflow from Synapse Workspace
+        """
+        try:
+            poller = self.azure_client.get_synapse_client().integration_runtimes.begin_delete(
+                resource_group_name=resource_group,
+                workspace_name=workspace_name,
+                integration_runtime_name=integration_runtime
+            )
+        except:
+            raise Exception(f'Error while deleting integration runtime - {integration_runtime}')
+        if(wait_till_completion):
+            return poller.result()
+        return poller
+
     def install_all_datasets(self, oea_instance:OEAInstance, root_path, datasets=None, wait_till_completion=True):
         """
         Installs all datasets from the given path on the Synapse workspace.
@@ -268,14 +297,19 @@ class SynapseManagementService:
         """
 
         if(os.path.isdir(f'{root_path}/') is True):
+            pollers = []
             if datasets is None:
                 datasets = os.listdir(f'{root_path}/')
             for dataset in datasets:
                 try:
-                    self.create_or_update_dataset(oea_instance, dataset_path=f'{root_path}/{dataset}', wait_till_completion=wait_till_completion)
+                    ds = self.create_or_update_dataset(oea_instance, dataset_path=f'{root_path}/{dataset}', wait_till_completion=wait_till_completion)
+                    pollers.append(ds)
                 except Exception as e:
-                        #todo: Handle the error
-                        raise Exception(str(e))
+                    #todo: Handle the error
+                    raise Exception(str(e))
+            return pollers
+        else:
+            return []
 
     def install_all_dataflows(self, oea_instance:OEAInstance, root_path, dataflows=None, wait_till_completion=True):
         """
@@ -286,13 +320,18 @@ class SynapseManagementService:
         """
 
         if(os.path.isdir(f'{root_path}/') is True):
+            pollers = []
             if(dataflows is None):
                 dataflows = [item for item in os.listdir(f'{root_path}/')]
             for dataflow in dataflows:
                 try:
-                    self.create_or_update_dataflow(oea_instance, dataflow_file_path=f'{root_path}/{dataflow}',wait_till_completion=wait_till_completion)
+                    df = self.create_or_update_dataflow(oea_instance, dataflow_file_path=f'{root_path}/{dataflow}',wait_till_completion=wait_till_completion)
+                    pollers.append(df)
                 except Exception as e:
                     raise Exception(str(e))
+            return pollers
+        else:
+            return []
 
     def install_all_integration_runtimes(self, oea_instance:OEAInstance, root_path, integration_runtimes=None, wait_till_completion=True):
         """
@@ -303,13 +342,18 @@ class SynapseManagementService:
         """
 
         if(os.path.isdir(f'{root_path}/') is True):
+            pollers = []
             if(integration_runtimes is None):
                 integration_runtimes = [item for item in os.listdir(f'{root_path}/')]
             for integration_runtime in integration_runtimes:
                 try:
-                    self.create_managed_integration_runtime(oea_instance, f'{root_path}/{integration_runtime}', wait_till_completion)
+                    ir = self.create_managed_integration_runtime(oea_instance, f'{root_path}/{integration_runtime}', wait_till_completion)
+                    pollers.append(ir)
                 except Exception as e:
                     raise Exception(str(e))
+            return pollers
+        else:
+            return []
 
     def install_all_notebooks(self, oea_instance:OEAInstance, root_path, notebooks=None, wait_till_completion=True):
         """
@@ -320,13 +364,18 @@ class SynapseManagementService:
         """
 
         if(os.path.isdir(f'{root_path}/') is True):
+            pollers = []
             if(notebooks is None):
                 notebooks = os.listdir(f'{root_path}/')
             for notebook in notebooks:
                 try:
-                    self.create_or_update_notebook(oea_instance, notebook_path=f"{root_path}/{notebook}", wait_till_completion=wait_till_completion)
+                    nb = self.create_or_update_notebook(oea_instance, notebook_path=f"{root_path}/{notebook}", wait_till_completion=wait_till_completion)
+                    pollers.append(nb)
                 except Exception as e:
                     raise Exception(str(e))
+            return pollers
+        else:
+            return []
 
     def install_all_pipelines(self, oea_instance:OEAInstance, root_path, pipelines=None, wait_till_completion=True):
         """
@@ -335,15 +384,19 @@ class SynapseManagementService:
         pass the pipelines parameter with the required assets in the correct order.
         If not passed, it will install all the assets in the path.
         """
-
         if(os.path.isdir(f'{root_path}/') is True):
+            pollers = []
             if(pipelines is None):
                 pipelines = [item for item in os.listdir(f'{root_path}/')]
             for pipeline in pipelines:
                 try:
-                    self.create_or_update_pipeline(oea_instance, pipeline_file_path=f'{root_path}/{pipeline}',wait_till_completion=wait_till_completion)
+                    pl = self.create_or_update_pipeline(oea_instance, pipeline_file_path=f'{root_path}/{pipeline}',wait_till_completion=wait_till_completion)
+                    pollers.append(pl)
                 except Exception as e:
                     raise Exception(str(e))
+            return pollers
+        else:
+            return []
 
     def install_all_linked_services(self, oea_instance:OEAInstance, root_path, linked_services=None, wait_till_completion=True):
         """
@@ -353,13 +406,18 @@ class SynapseManagementService:
         If not passed, it will install all the assets in the path.
         """
         if(os.path.isdir(f'{root_path}/') is True):
+            pollers = []
             if(linked_services is None):
                 linked_services = os.listdir(f'{root_path}/')
             for ls in linked_services:
                 try:
-                    self.create_linked_service(oea_instance, ls.split('.')[0], f'{root_path}/{ls}', wait_till_completion)
+                    ls = self.create_linked_service(oea_instance, linked_service_path=f'{root_path}/{ls}', wait_till_completion=wait_till_completion)
+                    pollers.append(ls)
                 except Exception as e:
                     raise Exception(str(e))
+            return pollers
+        else:
+            return []
 
     def delete_all_datasets(self, workspace_name, root_path=None, datasets=None, wait_till_completion=False):
         """
@@ -367,15 +425,18 @@ class SynapseManagementService:
         If order of deletion is important or you want to delete only selected assets,
         pass the datasets parameter with the required assets in the correct order.
         """
+        pollers = []
         if(root_path is None and datasets is None):
-            raise AttributeError("Arguments root_path and datasets cannot be Null.")
+            raise AttributeError("Arguments 'root_path' and 'datasets' cannot be Null.")
         if(datasets is None):
             datasets = [item.split('.')[0] for item in  os.listdir(root_path)]
         for dataset in datasets:
             try:
-                self.delete_dataset(workspace_name, dataset, wait_till_completion)
+                delete_poller = self.delete_dataset(workspace_name, dataset, wait_till_completion)
+                pollers.append(delete_poller)
             except Exception as e:
                     raise Exception(str(e))
+        return pollers
 
     def delete_all_dataflows(self, workspace_name, root_path=None, dataflows=None, wait_till_completion=False):
         """
@@ -383,15 +444,18 @@ class SynapseManagementService:
         If order of deletion is important or you want to delete only selected assets,
         pass the dataflows parameter with the required assets in the correct order.
         """
+        pollers = []
         if(root_path is None and dataflows is None):
             raise AttributeError("Arguments root_path and dataflows cannot be Null.")
         if(dataflows is None):
             dataflows = [item.split('.')[0] for item in  os.listdir(root_path)]
         for dataflow in dataflows:
             try:
-                self.delete_dataflow(workspace_name, dataflow, wait_till_completion)
+                delete_poller = self.delete_dataflow(workspace_name, dataflow, wait_till_completion)
+                pollers.append(delete_poller)
             except Exception as e:
                     raise Exception(str(e))
+        return pollers
 
     def delete_all_pipelines(self, workspace_name, root_path=None, pipelines=None, wait_till_completion=False):
         """
@@ -399,15 +463,18 @@ class SynapseManagementService:
         If order of deletion is important or you want to delete only selected assets,
         pass the pipelines parameter with the required assets in the correct order.
         """
+        pollers = []
         if(root_path is None and pipelines is None):
             raise AttributeError("Arguments root_path and pipelines cannot be Null.")
         if(pipelines is None):
             pipelines = [item.split('.')[0] for item in  os.listdir(root_path)]
         for pipeline in pipelines:
             try:
-                self.delete_pipeline(workspace_name, pipeline, wait_till_completion)
+                delete_poller = self.delete_pipeline(workspace_name, pipeline, wait_till_completion)
+                pollers.append(delete_poller)
             except Exception as e:
                     raise Exception(str(e))
+        return pollers
 
     def delete_all_notebooks(self, workspace_name, root_path=None, notebooks=None, wait_till_completion=False):
         """
@@ -415,15 +482,18 @@ class SynapseManagementService:
         If order of deletion is important or you want to delete only selected assets,
         pass the notebooks parameter with the required assets in the correct order.
         """
+        pollers = []
         if(root_path is None and notebooks is None):
             raise AttributeError("Arguments root_path and notebooks cannot be Null.")
         if(notebooks is None):
             notebooks = [item.split('.')[0] for item in  os.listdir(root_path)]
         for notebook in notebooks:
             try:
-                self.delete_notebook(workspace_name, notebook, wait_till_completion)
+                delete_poller = self.delete_notebook(workspace_name, notebook, wait_till_completion)
+                pollers.append(delete_poller)
             except Exception as e:
                     raise Exception(str(e))
+        return pollers
 
     def delete_all_linked_services(self, workspace_name, root_path=None, linked_services=None, wait_till_completion=False):
         """
@@ -431,12 +501,34 @@ class SynapseManagementService:
         If order of deletion is important or you want to delete only selected assets,
         pass the linked services parameter with the required assets in the correct order.
         """
+        pollers = []
         if(root_path is None and linked_services is None):
             raise AttributeError("Arguments root_path and linked_services cannot be Null.")
         if(linked_services is None):
             linked_services = [item.split('.')[0] for item in  os.listdir(root_path)]
         for linked_service in linked_services:
             try:
-                self.delete_linked_service(workspace_name, linked_service, wait_till_completion)
+                delete_poller = self.delete_linked_service(workspace_name, linked_service, wait_till_completion)
+                pollers.append(delete_poller)
             except Exception as e:
                     raise Exception(str(e))
+        return pollers
+
+    def delete_all_integration_runtimes(self, resource_group, workspace_name, root_path=None, integration_runtimes=None, wait_till_completion=False):
+        """
+        Deletes all integration runtimes from the given path on the Synapse workspace if the root_path is passed.
+        If order of deletion is important or you want to delete only selected assets,
+        pass the integration runtimes with the required assets in the correct order.
+        """
+        pollers = []
+        if(root_path is None and integration_runtimes is None):
+            raise AttributeError("Arguments root_path and integration_runtimes cannot be Null.")
+        if(integration_runtimes is None):
+            integration_runtimes = [item.split('.')[0] for item in  os.listdir(root_path)]
+        for integration_runtime in integration_runtimes:
+            try:
+                delete_poller = self.delete_integration_runtime(resource_group, workspace_name, integration_runtime, wait_till_completion)
+                pollers.append(delete_poller)
+            except Exception as e:
+                    raise Exception(str(e))
+        return pollers

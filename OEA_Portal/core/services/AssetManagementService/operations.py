@@ -1,10 +1,11 @@
 from OEA_Portal.settings import OEA_ASSET_TYPES, BASE_DIR
 from ..SynapseManagementService import SynapseManagementService
-from ..utils import get_blob_contents, get_storage_account_from_url, download_and_extract_zip_from_url
+from ..utils import *
 from OEA_Portal.auth.AzureClient import AzureClient
 from OEA_Portal.core.models import OEAInstalledAsset, OEAInstance
 from azure.mgmt.resource.resources.models import Deployment, DeploymentProperties
 import urllib.request
+import time
 import os
 import re
 import json
@@ -25,12 +26,12 @@ def get_installed_assets_in_workspace(workspace_name, azure_client:AzureClient):
     """
     Returns the list of Installed modules, packages and assets in the given workspace.
     """
-    workspace_object = next(ws for ws in azure_client.synapse_client.workspaces.list() if ws.name == workspace_name)
+    workspace_object = next(ws for ws in azure_client.get_synapse_client().workspaces.list() if ws.name == workspace_name)
     storage_account = get_storage_account_from_url(workspace_object.default_data_lake_storage.account_url)
     data = get_blob_contents(azure_client, storage_account, f'oea/admin/workspaces/{workspace_name}/status.json')
-    modules = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['Modules']]
-    packages = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['Packages']]
-    schemas = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['Schemas']]
+    modules = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['module']]
+    packages = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['package']]
+    schemas = [OEAInstalledAsset(asset['Name'], asset['Version'], asset['LastUpdatedTime']) for asset in data['schema']]
     return modules, packages, schemas, data['OEA_Version']
 
 def dfs(table_name, visited, dependency_dict, dependency_order):
@@ -79,8 +80,22 @@ def create_dependency_matrix_by_reading_all_files(pipeline_root_path):
             with open(f"{pipeline_root_path}/{file}") as f:
                 file_json = json.load(f)
             for x in get_values_from_json(file_json, 'pipeline'):
-                dependency_dict[key].append(x['referenceName'])
+                if x['referenceName']+'.json' in files:
+                    dependency_dict[key].append(x['referenceName'])
     return dependency_dict
+
+#todo; upload_blob_contents is not working.
+def log_installed_asset(azure_client, workspace_name, storage_account, asset_type, asset_name, version):
+    """
+    Log the installed asset in the Workspace DB.
+    """
+    data = get_blob_contents(azure_client, storage_account, f'oea/admin/workspaces/{workspace_name}/status.json')
+    data[asset_type].append({
+        "Name": asset_name,
+        "Version": version,
+        "LastUpdatedTime": time.asctime()
+    })
+    upload_blob_contents(azure_client, storage_account, f'oea/admin/workspaces/{workspace_name}/status.json', json.dumps(data))
 
 def create_dependency_matrix_by_reading_template(template_file=None, template_json=None):
     """
@@ -113,22 +128,6 @@ def get_values_from_json(file_json, target_field):
                     for item in get_values_from_json(x, target_field):
                         yield item
 
-#todo: Tried to using deployments to install pipeline. Delete if not working.
-def deploy_template_to_resource_group(azure_client:AzureClient):
-    with open(f"{BASE_DIR}/downloads/temp.json") as f : template_json = json.load(f)
-    with open(f"{BASE_DIR}/downloads/parameters.json") as f : param_json = json.load(f)
-    poller = azure_client.get_resource_client().deployments.begin_create_or_update(
-        resource_group_name='rg-oea-abhinav4',
-        deployment_name='deployment-003',
-        parameters=Deployment(
-            properties=DeploymentProperties(
-                mode='Incremental',
-                template=template_json,
-                parameters=param_json
-            )
-        )
-    )
-    print(poller.result())
 
 def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:AzureClient):
     with open(file_path) as f:
@@ -144,22 +143,30 @@ def parse_deployment_template_and_install_artifacts(file_path:str, azure_client:
     template_json = json.loads(template_str)
 
     pipeline_config_json = {}
-
+    pollers_pass1 = []
+    pollers_pass2 = []
     for resource in template_json["resources"]:
         resource["name"] = re.sub('[^a-zA-Z0-9_]', '', resource["name"].split(",")[-1])
         if resource["type"] == "Microsoft.Synapse/workspaces/pipelines":
             pipeline_config_json[resource["name"]] = resource
         if resource["type"] == "Microsoft.Synapse/workspaces/datasets":
-            ds = sms.create_or_update_dataset(target_oea_instance, dataset_dict=resource, wait_till_completion=True)
+            pollers_pass1.append(sms.create_or_update_dataset(target_oea_instance, dataset_dict=resource, wait_till_completion=False))
+        elif resource["type"] == "Microsoft.Synapse/workspaces/notebooks":
+            pollers_pass1.append(sms.create_or_update_notebook(target_oea_instance, notebook_dict=resource, wait_till_completion=False))
+
+    while(not(any(poller.status() == 'InProgress' for poller in pollers_pass1))):
+        time.sleep(2)
 
     for resource in template_json["resources"]:
         if resource["type"] == "Microsoft.Synapse/workspaces/dataflows":
-            df = sms.create_or_update_dataflow(target_oea_instance, dataflow_dict=resource, wait_till_completion=True)
-        elif resource["type"] == "Microsoft.Synapse/workspaces/notebooks":
-            nb = sms.create_or_update_notebook(target_oea_instance, notebook_dict=resource, wait_till_completion=True)
+            pollers_pass2.append(sms.create_or_update_dataflow(target_oea_instance, dataflow_dict=resource, wait_till_completion=False))
+
+    while(not(any(poller.status() == 'InProgress' for poller in pollers_pass2))):
+        time.sleep(2)
 
     dependency_dict = create_dependency_matrix_by_reading_template(template_json=template_json)
     pipeline_dependency_order = create_pipeline_dependency_order(dependency_dict)
 
     for pipeline in pipeline_dependency_order:
-        pl = sms.create_or_update_pipeline(target_oea_instance, pipeline_dict=pipeline_config_json[pipeline], wait_till_completion=True)
+        sms.create_or_update_pipeline(target_oea_instance, pipeline_dict=pipeline_config_json[pipeline], wait_till_completion=True)
+

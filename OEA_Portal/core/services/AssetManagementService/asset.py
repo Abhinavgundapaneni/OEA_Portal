@@ -1,10 +1,11 @@
 import os
 import json
+import time
 from OEA_Portal.settings import OEA_ASSET_TYPES, BASE_DIR
 from OEA_Portal.core.models import OEAInstance
 from ..SynapseManagementService import SynapseManagementService
 from OEA_Portal.auth.AzureClient import AzureClient
-from .operations import create_dependency_matrix_by_reading_all_files, create_pipeline_dependency_order
+from .operations import *
 from ..utils import download_and_extract_zip_from_url
 
 class BaseOEAAsset:
@@ -32,88 +33,107 @@ class BaseOEAAsset:
         self.sql_scripts = list(filter( lambda x: '.md' not in x, os.listdir(f"{self.local_asset_root_path}/sqlScript"))) if os.path.isdir(f"{self.local_asset_root_path}/sqlScript") else []
 
         self.asset_url = f"https://github.com/microsoft/OpenEduAnalytics/releases/download/{asset_type}_{release_keyword}_v{version}/{asset_type}_{release_keyword}_v{version}.zip"
-        download_and_extract_zip_from_url(self.asset_url, self.local_asset_download_path)
+        #todo: Check If exists before downloading.
+        # download_and_extract_zip_from_url(self.asset_url, self.local_asset_download_path)
         self.dependency_dict = create_dependency_matrix_by_reading_all_files(f"{self.local_asset_root_path}/pipeline")
         self.pipelines_dependency_order = create_pipeline_dependency_order(self.dependency_dict)
 
-    def dfs(self, table_name, visited, dependency_dict, dependency_order):
-        """
-        Does a Depth First Search on the dependency matrix.
-        """
-        visited[table_name] = True
-        if dependency_dict[table_name] == []:
-            dependency_order.append(table_name)
-            return
-        for dependent_table in dependency_dict[table_name]:
-            if(visited[dependent_table] is False):
-                self.dfs(dependent_table, visited, dependency_dict, dependency_order)
-            if(visited[dependent_table] is False):
-                dependency_order.append(dependent_table)
-        dependency_order.append(table_name)
+    def _verify_version_dependency(self, source_version:float, target_version:float, operation):
+        if operation == '>':
+            return source_version > target_version
+        elif operation == '<':
+            return source_version < target_version
+        elif operation == '<=':
+            return source_version <= target_version
+        elif operation == '>=':
+            return source_version >= target_version
+        elif operation == '==':
+            return source_version == target_version
 
-    def create_pipeline_dependency_order(self):
-        """
-        Returns a topological sorted list of pipelines where for any pipeline at index n is not
-        dependent of the pipelines from index greater than n.
-        """
-        visited = {}
-        dependency_order = []
-        for pipeline in self.pipelines:
-            visited[pipeline.split('.')[0]] = False
-        for pipeline in self.pipelines:
-            if(visited[pipeline.split('.')[0]] is False):
-                self.dfs(pipeline.split('.')[0], visited, self.dependency_dict, dependency_order)
-        return dependency_order
+    def _verify_asset_dependency(self, assets, dependent_asset, target_version, operation):
+        if not(any(asset.asset_name == dependent_asset for asset in assets)):
+            raise Exception(f"The asset you are trying to install has a dependency on the '{dependent_asset}' asset")
 
-    def create_dependency_matrix(self):
-        """
-        Reads through all the pipeline files and returns a dependency matrix.
-        It returns a where a pipeline name is a key and a list containing all the dependent pipelines as value
-        """
-        files = os.listdir(f"{self.local_asset_root_path}/pipeline")
-        dependency_dict = {}
-        for file in files:
-            if '.json' in file:
-                key = file.split('.')[0]
-                dependency_dict[key] = []
-                with open(f"{self.local_asset_root_path}/pipeline/{file}") as f:
-                    file_json = json.load(f)
-                for x in get_values_from_json(file_json, 'pipeline'):
-                    value = x['referenceName']
-                    dependency_dict[key].append(value)
-        return dependency_dict
+        installed_asset = next(asset for asset in assets if asset.asset_name == dependent_asset)
+        if self._verify_version_dependency(installed_asset.version, target_version, operation) is False:
+            raise Exception(f"The asset you are trying to install requires '{dependent_asset}' {operation} '{target_version}'. But found version {installed_asset.version}")
+
+
+    def _validate_asset_installation(self, azure_client:AzureClient, oea_instance:OEAInstance):
+        operators = ["==", ">=", "<=", ">", "<"]
+        modules, packages, schemas, oea_version = get_installed_assets_in_workspace(oea_instance.workspace_name, azure_client)
+        with open(f"{self.local_asset_root_path}/dependency.txt") as f:
+            dependencies = f.readlines()
+        for dependency in dependencies:
+            op = next(op for op in operators if op in dependency)
+            dependent_asset = dependency.split(op)[0].replace(' ', '')
+            target_version = dependency.split(op)[1].replace(' ', '')
+            if dependent_asset == 'OEA':
+                if self._verify_version_dependency(oea_version, target_version, op) is False:
+                    raise Exception(f"Expected {dependent_asset} asset to be {op} {target_version}. But found {oea_version}")
+            else:
+                if dependent_asset.split('_')[0] == 'module':
+                    self._verify_asset_dependency(modules, '_'.join(dependent_asset.split('_')[1:]), target_version, op)
+                elif dependent_asset.split('_')[0] == 'package':
+                    self._verify_asset_dependency(packages, '_'.join(dependent_asset.split('_')[1:]), target_version, op)
+                elif dependent_asset.split('_')[0] == 'schema':
+                    self._verify_asset_dependency(schemas, '_'.join(dependent_asset.split('_')[1:]), target_version, op)
+
 
     def install(self, azure_client:AzureClient, oea_instance:OEAInstance):
         """
         Installs the Asset into the given Synapse workspace.
         """
+        self._validate_asset_installation(azure_client, oea_instance)
         sms = SynapseManagementService(azure_client, oea_instance.resource_group)
         pipeline_file_names = [f"{pipeline}.json" for pipeline in self.pipelines_dependency_order]
         try:
-            sms.install_all_integration_runtimes(oea_instance, f"{self.local_asset_root_path}/integrationRuntime", self.integration_runtimes)
-            sms.install_all_linked_services(oea_instance, f"{self.local_asset_root_path}/linkedService", self.linked_services)
-            sms.install_all_datasets(oea_instance, f"{self.local_asset_root_path}/dataset", self.datasets)
-            sms.install_all_dataflows(oea_instance, f"{self.local_asset_root_path}/dataflow", self.dataflows)
-            sms.install_all_notebooks(oea_instance, f"{self.local_asset_root_path}/notebook", self.notebooks)
+            ir_pollers = sms.install_all_integration_runtimes(oea_instance, f"{self.local_asset_root_path}/integrationRuntime", self.integration_runtimes, wait_till_completion=False)
+            ls_pollers = sms.install_all_linked_services(oea_instance, f"{self.local_asset_root_path}/linkedService", self.linked_services, wait_till_completion=False)
+            nb_pollers = sms.install_all_notebooks(oea_instance, f"{self.local_asset_root_path}/notebook", self.notebooks, wait_till_completion=False)
+            if ls_pollers is not None:
+                # Wait for Datasets to install.
+                while(any(poller.status() == 'InProgress' for poller in ls_pollers)):
+                    time.sleep(2)
+            ds_pollers = sms.install_all_datasets(oea_instance, f"{self.local_asset_root_path}/dataset", self.datasets, wait_till_completion=False)
+
+            if ds_pollers is not None:
+                # Wait for Datasets to install.
+                while(any(poller.status() == 'InProgress' for poller in ds_pollers)):
+                    time.sleep(2)
+
+            df_pollers = sms.install_all_dataflows(oea_instance, f"{self.local_asset_root_path}/dataflow", self.dataflows, wait_till_completion=False)
+
+            # Wait for dataflows, notebooks and integration runtimes to install.
+            while(any(poller.status() == 'InProgress' for poller in df_pollers + nb_pollers + ir_pollers)):
+                time.sleep(2)
+
             sms.install_all_pipelines(oea_instance, f"{self.local_asset_root_path}/pipeline", pipeline_file_names)
+
         except RuntimeError as e:
             raise RuntimeError(f"Error while installing asset '{self.asset_display_name}' on the workspace '{oea_instance.workspace_name} - {str(e)}")
+
+        # log_installed_asset(azure_client, oea_instance.workspace_name, oea_instance.storage_account, self.asset_type, self.asset_display_name, self.version)
 
     def uninstall(self, azure_client:AzureClient, oea_instance:OEAInstance):
         """
         Uninstalls the Asset into the given Synapse workspace.
         """
-        pass
+        sms = SynapseManagementService(azure_client, oea_instance.resource_group)
 
-def get_values_from_json(file_json, target_field):
-    for k,v in file_json.items():
-        if k == target_field:
-            yield v
-        elif isinstance(v, dict):
-            for item in get_values_from_json(v, target_field):
-                yield item
-        elif isinstance(v, list):
-            for x in v:
-                if isinstance(x, dict):
-                    for item in get_values_from_json(x, target_field):
-                        yield item
+        sms.delete_all_pipelines(oea_instance.workspace_name, pipelines=[pl.split('.')[0] for pl in self.pipelines_dependency_order[::-1]], wait_till_completion=True)
+
+        nb_pollers = sms.delete_all_notebooks(oea_instance.workspace_name, notebooks=[nb.split('.')[0] for nb in self.notebooks], wait_till_completion=False)
+
+        df_pollers = sms.delete_all_dataflows(oea_instance.workspace_name, dataflows=[df.split('.')[0] for df in self.dataflows], wait_till_completion=False)
+
+        ir_pollers = sms.delete_all_integration_runtimes(oea_instance.resource_group, oea_instance.workspace_name, integration_runtimes=[ir.split('.')[0] for ir in self.integration_runtimes], wait_till_completion=False)
+        if df_pollers:
+            while(any(poller.status() == 'InProgress' for poller in df_pollers)):
+                time.sleep(2)
+        ds_pollers = sms.delete_all_datasets(oea_instance.workspace_name, datasets=[ds.split('.')[0] for ds in self.datasets], wait_till_completion=False)
+
+        if ds_pollers:
+            while(any(poller.status() == 'InProgress' for poller in ds_pollers)):
+                time.sleep(2)
+        ls_pollers = sms.delete_all_linked_services(oea_instance.workspace_name,linked_services=[ls.split('.')[0] for ls in self.linked_services], wait_till_completion=False)
