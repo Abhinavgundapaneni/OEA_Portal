@@ -24,6 +24,7 @@ urlpatterns = [
     path('home', csrf_exempt(HomeView.as_view()), name='home'),
     path('install', csrf_exempt(InstallationFormView.as_view()), name='install'),
     path('dashboard', csrf_exempt(DashboardView.as_view()), name='dashboard'),
-    path('profile', csrf_exempt(ProfileView.as_view()), name='profile'),
+    path('asset/install', csrf_exempt(AssetInstallationView.as_view()), name='asset_install'),
+    path('asset/uninstall', csrf_exempt(AssetUninstallationView.as_view()), name='asset_uninstall'),
     path('installed_modules', csrf_exempt(InstalledModulesView.as_view()), name='installed_modules')
 ]

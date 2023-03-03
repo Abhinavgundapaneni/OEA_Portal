@@ -12,7 +12,7 @@ class BaseOEAAsset:
     """
     A BaseOEAAsset class represents an OEA Asset - module, package or schema.
     """
-    def __init__(self, asset_name:str, asset_name:str, version:str, asset_type:str):
+    def __init__(self, asset_name:str, version:str, asset_type:str):
         if(asset_type not in OEA_ASSET_TYPES):
             raise Exception(f"{asset_type} is not an OEA supported Asset type.")
         self.asset_name = asset_name
@@ -32,7 +32,8 @@ class BaseOEAAsset:
 
         self.asset_url = f"https://github.com/microsoft/OpenEduAnalytics/releases/download/{asset_type}_{asset_name}_v{version}/{asset_type}_{asset_name}_v{version}.zip"
         #todo: Check If exists before downloading.
-        # download_and_extract_zip_from_url(self.asset_url, self.local_asset_download_path)
+        if os.path.isdir(self.local_asset_root_path) is False:
+            download_and_extract_zip_from_url(self.asset_url, self.local_asset_download_path)
         self.dependency_dict = create_dependency_matrix_by_reading_all_files(f"{self.local_asset_root_path}/pipeline")
         self.pipelines_dependency_order = create_pipeline_dependency_order(self.dependency_dict)
 

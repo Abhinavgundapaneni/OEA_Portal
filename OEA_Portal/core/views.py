@@ -91,8 +91,29 @@ class AssetInstallationView(TemplateView):
         azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
         asset = BaseOEAAsset(asset_name, asset_version, asset_type)
         asset.install(azure_client, OEAInstance('syn-oea-abhinav4', 'rg-oea-abhinav4', 'kv-oea-abhinav4', 'stoeaabhinav4'))
+        return redirect('home')
 
-        return self.render_to_response({'profile_form':profile_form, 'base_url':base_url})
+class AssetUninstallationView(TemplateView):
+    template_name = 'core/asset_uninstallation.html'
+    config = get_config_data()
+    def get_context_data(self, **kwargs):
+        context = super(ProfileView, self).get_context_data(**kwargs)
+        context['base_url'] = base_url
+        return context
+
+    def get(self, *args, **kwargs):
+        form = AssetUninstallationForm()
+        return self.render_to_response({'form':form, 'base_url':base_url})
+
+    def post(self, *args, **kwargs):
+        asset_name = self.request.POST.get('asset_name')
+        asset_type = self.request.POST.get('asset_type')
+        asset_version = self.request.POST.get('asset_version')
+        azure_client = AzureClient(self.config['SubscriptionId'], self.config['SubscriptionId'])
+        asset = BaseOEAAsset(asset_name, asset_version, asset_type)
+        asset.uninstall(azure_client, OEAInstance('syn-oea-abhinav4', 'rg-oea-abhinav4', 'kv-oea-abhinav4', 'stoeaabhinav4'))
+
+        return redirect('home')
 
 class InstalledModulesView(TemplateView):
     template_name = "core/installed_modules.html"

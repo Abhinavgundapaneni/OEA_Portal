@@ -41,6 +41,16 @@ class AssetInstallationForm(forms.Form):
         ("schema", "schema")
     ), required=True)
     asset_version = forms.CharField(max_length=5)
+
+class AssetUninstallationForm(forms.Form):
+    asset_name = forms.CharField(max_length=50)
+    asset_type = forms.ChoiceField(choices=(
+        ("module", "module"),
+        ("package", "package"),
+        ("schema", "schema")
+    ), required=True)
+    asset_version = forms.CharField(max_length=5)
+
 class ColumnMetadata(forms.Form):
     column_name = forms.CharField(max_length=100)
     column_type = forms.ChoiceField(choices=TYPES)
